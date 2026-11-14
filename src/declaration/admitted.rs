@@ -4,7 +4,7 @@
 use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
-use quire_exact::{Integer, Location, NodeKey, Origin, Rational, UnitId, ValueType, VariantId};
+use filament_exact::{Integer, Location, NodeKey, Origin, Rational, UnitId, ValueType, VariantId};
 
 use super::{CheckedEquality, EqualityOperand, EqualityOperator, EqualitySchedule};
 use crate::enumeration::{EnumDeclaration, EnumMemberIndex};
@@ -111,16 +111,16 @@ pub struct EqualityDecisionDescriptor {
 /// and passes it to [`CheckedEquality::from_admitted_decision`]. The separate
 /// hidden public mint is an audited API convention: another Rust crate can
 /// call it with a seal. Field privacy does **not** establish language-level
-/// cross-crate unforgeability. IR and QSL own structural API/dependency audits.
+/// cross-crate unforgeability. IR and FSL own structural API/dependency audits.
 ///
 /// An external caller cannot construct the retained value from raw fields:
 /// ```compile_fail,E0451
-/// use quire_semantic_value::declaration::{
+/// use filament_semantic_value::declaration::{
 ///     AdmittedEqualityDecision, CheckedEquality, EqualityUnitDescriptor,
 ///     EqualityEnumMemberDescriptor,
 /// };
-/// use quire_semantic_value::enumeration::EnumDeclaration;
-/// use quire_exact::Location;
+/// use filament_semantic_value::enumeration::EnumDeclaration;
+/// use filament_exact::Location;
 /// fn forge(checked: CheckedEquality, location: Location,
 ///     units: Vec<EqualityUnitDescriptor>, enum_declarations: Vec<EnumDeclaration>,
 ///     enum_members: Vec<EqualityEnumMemberDescriptor>) -> AdmittedEqualityDecision {

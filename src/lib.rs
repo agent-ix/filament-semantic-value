@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! `quire-semantic-value`: a shared `no_std` leaf crate above the `quire-exact`
+//! `filament-semantic-value`: a shared `no_std` leaf crate above the `filament-exact`
 //! kernel.
 //!
 //! It holds the runtime semantic values that a compiler, an evaluator and a
 //! backend share, so the code exists once. Its dependencies are the
-//! `quire-exact` kernel, the one RFC 8785 encoder (`quire-canonical`, built
+//! `filament-exact` kernel, the one RFC 8785 encoder (`quire-canonical`, built
 //! without `std`) and `thiserror`. It uses only `core` and `alloc`.
 #![no_std]
 

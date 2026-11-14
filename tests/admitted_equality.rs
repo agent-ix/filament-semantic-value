@@ -3,23 +3,23 @@
 
 mod common;
 
-use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     EnumMember, EnumShape, Integer, LimitKind, Location, Meter, Origin, Outcome, Quantity,
     Rational, Role, ScalarLimits, TextPayload, TextProfile, TextType, UnitId, Value, ValueType,
     VariantId,
 };
-use quire_semantic_value::declaration::{
+use filament_semantic_value::declaration::{
     CheckedEquality, CompositeDeclaration, CompositeShape, EqualityDecisionDescriptor,
     EqualityEnumDeclarationDescriptor, EqualityEnumMemberDescriptor, EqualityOperand,
     EqualityOperator, EqualitySchedule, EqualityUnitDescriptor, EqualityUnitEdgeDescriptor,
     EqualityUnitForm, TypeEnvironment,
 };
-use quire_semantic_value::enumeration::EnumMemberIndex;
-use quire_semantic_value::reader_admission::{
+use filament_semantic_value::enumeration::EnumMemberIndex;
+use filament_semantic_value::reader_admission::{
     mint_admitted_equality_decision, AffineStep, EqualityMaterializationError,
     EqualityMaterializationLocus, ReaderSeal,
 };
+use ix_trace_rs::trace;
 
 fn meter(work: u64) -> Meter {
     Meter::new(ScalarLimits {
@@ -135,7 +135,7 @@ fn an_admitted_composite_needs_no_rechecking_environment() {
 }
 
 fn text(value: &str, ty: &TextType) -> Value {
-    match quire_exact::admit_text(
+    match filament_exact::admit_text(
         &TextPayload::from_utf8(value.as_bytes()).unwrap(),
         ty,
         &mut meter(10_000),
@@ -344,14 +344,14 @@ fn selected_affine_path_materializes_canonical_without_reselecting_ids_or_conver
         mint_admitted_equality_decision(ReaderSeal, original, &mut meter(100_000)).unwrap();
     assert_eq!(decision.units(), rows);
     let native = decision.resolved_units().get(rows[0].id.clone()).unwrap();
-    let quire_semantic_value::quantity::QuantityUnit::Declared(unit) = native else {
+    let filament_semantic_value::quantity::QuantityUnit::Declared(unit) = native else {
         panic!("declared row");
     };
     assert_eq!(unit.canonical().scale(), &rational(10));
     assert_eq!(unit.canonical().offset(), &rational(22));
     assert_eq!(unit.root(), common::node(403));
     assert_eq!(unit.key(), rows[0].id.declared_key().unwrap().clone());
-    let quire_semantic_value::quantity::QuantityUnit::Declared(root_unit) =
+    let filament_semantic_value::quantity::QuantityUnit::Declared(root_unit) =
         decision.resolved_units().get(rows[1].id.clone()).unwrap()
     else {
         panic!("root declared row");
@@ -398,7 +398,7 @@ fn compound_descriptor_keeps_original_identity_dimensions_and_root_powers() {
     let decision =
         mint_admitted_equality_decision(ReaderSeal, original, &mut meter(10_000)).unwrap();
     assert_eq!(decision.units()[0].id, id);
-    let quire_semantic_value::quantity::QuantityUnit::Compound(native) =
+    let filament_semantic_value::quantity::QuantityUnit::Compound(native) =
         decision.resolved_units().get(id.clone()).unwrap()
     else {
         panic!("compound row");
@@ -437,8 +437,8 @@ fn materialization_shares_remaining_work_and_returns_no_partial_value_at_n_minus
     let original = affine_descriptor();
     let mut complete = meter(100_000);
     complete
-        .charge(quire_exact::Charge::new(
-            quire_exact::ChargePoint::UnitIdentityRead,
+        .charge(filament_exact::Charge::new(
+            filament_exact::ChargePoint::UnitIdentityRead,
         ))
         .unwrap();
     let prefix = complete.consumed(LimitKind::WorkUnits);
@@ -447,16 +447,16 @@ fn materialization_shares_remaining_work_and_returns_no_partial_value_at_n_minus
     assert!(total > prefix);
     let mut exact = meter(total);
     exact
-        .charge(quire_exact::Charge::new(
-            quire_exact::ChargePoint::UnitIdentityRead,
+        .charge(filament_exact::Charge::new(
+            filament_exact::ChargePoint::UnitIdentityRead,
         ))
         .unwrap();
     assert!(mint_admitted_equality_decision(ReaderSeal, original.clone(), &mut exact).is_ok());
     assert_eq!(exact.consumed(LimitKind::WorkUnits), total);
     let mut short = meter(total - 1);
     short
-        .charge(quire_exact::Charge::new(
-            quire_exact::ChargePoint::UnitIdentityRead,
+        .charge(filament_exact::Charge::new(
+            filament_exact::ChargePoint::UnitIdentityRead,
         ))
         .unwrap();
     let error = mint_admitted_equality_decision(ReaderSeal, original, &mut short).unwrap_err();
@@ -485,7 +485,7 @@ fn rational_growth_refuses_before_the_first_unpaid_fold_operation() {
     assert_eq!(cause.limit_kind, LimitKind::IntegerBits);
     assert_eq!(
         cause.charge_point,
-        quire_exact::ChargePoint::UnitRationalArithmetic
+        filament_exact::ChargePoint::UnitRationalArithmetic
     );
     assert_eq!(
         locus,
@@ -508,8 +508,8 @@ fn each_unpaid_affine_event_keeps_its_original_typed_locus() {
         (5, 1, AffineStep::OffsetScale),
         (6, 1, AffineStep::OffsetAdd),
     ] {
-        let mut denied = meter(100_000).with_injected_denial(quire_exact::InjectedDenial {
-            point: quire_exact::ChargePoint::UnitRationalArithmetic,
+        let mut denied = meter(100_000).with_injected_denial(filament_exact::InjectedDenial {
+            point: filament_exact::ChargePoint::UnitRationalArithmetic,
             occurrence: std::num::NonZeroU64::new(occurrence).unwrap(),
         });
         let error = mint_admitted_equality_decision(ReaderSeal, affine_descriptor(), &mut denied)
@@ -519,7 +519,7 @@ fn each_unpaid_affine_event_keeps_its_original_typed_locus() {
         };
         assert_eq!(
             cause.charge_point,
-            quire_exact::ChargePoint::UnitRationalArithmetic
+            filament_exact::ChargePoint::UnitRationalArithmetic
         );
         assert_eq!(
             locus,
@@ -565,7 +565,7 @@ fn a_long_retained_path_materializes_on_a_small_stack_without_a_depth_cap() {
                 panic!("declared");
             };
             assert_eq!(retained, &path);
-            let quire_semantic_value::quantity::QuantityUnit::Declared(native) =
+            let filament_semantic_value::quantity::QuantityUnit::Declared(native) =
                 decision.resolved_units().get(id).unwrap()
             else {
                 panic!("declared");
@@ -635,7 +635,7 @@ fn enum_case_copy_respects_the_callers_byte_provision_without_normalizing() {
 #[trace("IR-1223")]
 #[test]
 fn materialization_codes_have_a_closed_round_trip_catalog() {
-    use quire_semantic_value::reader_admission::EqualityMaterializationCode as Code;
+    use filament_semantic_value::reader_admission::EqualityMaterializationCode as Code;
     assert_eq!(
         Code::ALL.map(Code::as_str),
         [
@@ -657,7 +657,7 @@ fn materialization_codes_have_a_closed_round_trip_catalog() {
 #[trace("IR-1223")]
 #[test]
 fn a_mismatched_unit_identity_arm_is_a_typed_materialization_failure() {
-    use quire_semantic_value::reader_admission::EqualityMaterializationCode;
+    use filament_semantic_value::reader_admission::EqualityMaterializationCode;
     for compound_id in [false, true] {
         let mut original = descriptor();
         original.units.push(EqualityUnitDescriptor {

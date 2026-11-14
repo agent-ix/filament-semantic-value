@@ -5,12 +5,12 @@ use std::cell::{Cell, RefCell};
 
 mod common;
 
-use ix_trace_rs::trace;
-use quire_exact::{Integer, NodeKey, OptionValue, Value, ValueType};
-use quire_semantic_value::declaration::{
+use filament_exact::{Integer, NodeKey, OptionValue, Value, ValueType};
+use filament_semantic_value::declaration::{
     CompositeDeclaration, CompositeShape, EnvironmentFailure, FieldDeclaration,
     ReservationDecision, StorageRequest, StorageUnit, TypeEnvironment, TypeEnvironmentLimits,
 };
+use ix_trace_rs::trace;
 
 #[allow(
     clippy::disallowed_methods,
@@ -27,7 +27,7 @@ fn declaration() -> CompositeDeclaration {
         CompositeShape::Record(vec![FieldDeclaration::new(
             "left",
             ValueType::Integer,
-            quire_exact::Presence::Required,
+            filament_exact::Presence::Required,
         )]),
     )
 }
@@ -163,7 +163,7 @@ fn record_environment_admission_scales_without_per_root_scratch_reservations() {
                         CompositeShape::Record(vec![FieldDeclaration::new(
                             "value",
                             ValueType::Integer,
-                            quire_exact::Presence::Required,
+                            filament_exact::Presence::Required,
                         )]),
                     )
                 })

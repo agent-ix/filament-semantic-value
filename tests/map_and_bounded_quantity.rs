@@ -9,28 +9,28 @@ use std::sync::{Arc, Mutex};
 
 mod common;
 
-use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     from_admitted, BoundedQuantityType, Cancel, CancelCause, CardinalityBound, CarriedQuantityType,
     CollectionKind, CollectionType, FieldValue, FloatType, Identifier, IeeeWidth, IllTypedCause,
     Integer, IntegerInterval, MapType, Meter, NodeKey, OptionValue, Outcome, Presence, Quantity,
     QuantityCarrier, Rational, RoundingMode, ScalarLimits, UnionMember, UnitId, Value, ValueType,
     VariantId,
 };
-use quire_semantic_value::declaration::{
+use filament_semantic_value::declaration::{
     admits_equality_conversion, operand_value, CompositeDeclaration, CompositeShape,
     DeclarationCause, EnvironmentFailure, EnvironmentLimitKind, EqualityOperand, EqualityOperator,
     EqualitySchedule, FieldDeclaration, RecursionEdges, TypeEnvironment, TypeEnvironmentLimits,
     UnionMemberDeclaration,
 };
-use quire_semantic_value::enumeration::EnumMemberIndex;
-use quire_semantic_value::quantity::{UnitScope, UnitTable};
-use quire_semantic_value::supplied_membership::{
+use filament_semantic_value::enumeration::EnumMemberIndex;
+use filament_semantic_value::quantity::{UnitScope, UnitTable};
+use filament_semantic_value::supplied_membership::{
     BoundedSuppliedAdmissionError, InvalidMembershipCause, MembershipLocus, MembershipPart,
     MembershipPathArena, QuantityBoundEndpoint, SuppliedAdmissionError, SuppliedMembershipBudget,
     UnsupportedHelperFamily,
 };
-use quire_semantic_value::unit::{DimensionNode, NominalDeclaration, UnitGraph, UnitNode};
+use filament_semantic_value::unit::{DimensionNode, NominalDeclaration, UnitGraph, UnitNode};
+use ix_trace_rs::trace;
 
 fn key(n: u64) -> NodeKey {
     common::node(n)
@@ -288,7 +288,7 @@ fn map_over_floats_is_admitted_and_set_of_such_a_map_is_refused() {
     );
     assert_eq!(
         environment.try_check_type(&refused).unwrap_err(),
-        quire_semantic_value::declaration::TypeCheckError::Refused(quire_exact::IllTyped {
+        filament_semantic_value::declaration::TypeCheckError::Refused(filament_exact::IllTyped {
             cause: IllTypedCause::OperatorIneligible
         })
     );
@@ -351,9 +351,9 @@ fn map_value_type_is_refused_as_inside_option_and_collection() {
             };
             assert_eq!(
                 environment.try_check_type(&wrapped).unwrap_err(),
-                quire_semantic_value::declaration::TypeCheckError::Refused(quire_exact::IllTyped {
-                    cause: plain
-                }),
+                filament_semantic_value::declaration::TypeCheckError::Refused(
+                    filament_exact::IllTyped { cause: plain }
+                ),
                 "{wrapped:?}"
             );
         }
@@ -1073,7 +1073,7 @@ fn check(
     table: &UnitTable,
     left: EqualityOperand,
     right: EqualityOperand,
-) -> Result<quire_semantic_value::declaration::CheckedEquality, IllTypedCause> {
+) -> Result<filament_semantic_value::declaration::CheckedEquality, IllTypedCause> {
     environment
         .check_equality_in(
             &UnitScope::new(table),
@@ -1384,7 +1384,7 @@ fn equality_compares_identically_carried_quantity_values_exactly() {
     let carried = ValueType::carried_quantity(CarriedQuantityType::new(
         unit_u(),
         QuantityCarrier::Decimal(
-            quire_exact::DecimalType::new(
+            filament_exact::DecimalType::new(
                 integer(-100),
                 integer(100),
                 2,
@@ -2008,7 +2008,7 @@ fn bounded_quantity_link_event_denial_and_cancellation_keep_their_causes() {
             SuppliedAdmissionError::Cancelled {
                 cause: CancelCause::Deadline,
                 spent: 0,
-                event: quire_semantic_value::supplied_membership::MembershipEvent::ValueVisit,
+                event: filament_semantic_value::supplied_membership::MembershipEvent::ValueVisit,
                 locus: walk.at,
             }
         ))
@@ -2092,7 +2092,7 @@ fn bounded_quantity_link_polls_cancellation_before_each_step() {
 #[trace("TC-927", "FR-127-AC-17")]
 #[test]
 fn quantity_bound_endpoints_have_distinct_wire_spellings() {
-    use quire_semantic_value::supplied_stop::SuppliedNumericOperand;
+    use filament_semantic_value::supplied_stop::SuppliedNumericOperand;
     let spellings = [
         (
             QuantityBoundEndpoint::ExpectedMinimum,

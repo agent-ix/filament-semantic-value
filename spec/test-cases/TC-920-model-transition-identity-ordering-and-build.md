@@ -3,7 +3,7 @@ id: TC-920
 title: "ModelTransition builds, encodes, compares and orders by canonical identity bytes"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-120
+  - target: ix://agent-ix/filament-semantic-value/FR-120
     type: verifies
 ---
 # TC-920: ModelTransition builds, encodes, compares and orders by canonical identity bytes
@@ -11,7 +11,7 @@ relationships:
 ## Description
 
 Verify [FR-120](../functional/FR-120-model-transition-identity-type.md)
-through QSV's public `model_transition` API. Scope: FR-120-AC-1 through
+through FSV's public `model_transition` API. Scope: FR-120-AC-1 through
 FR-120-AC-8, AC-12, AC-13, AC-15 and AC-16 as tests; FR-120-AC-9 and AC-14 by
 inspection of the public items and source; FR-120-AC-10 by `make build-no-std` and `make lint`; FR-120-AC-11 by the
 `Cargo.toml` and `Cargo.lock` diff of the implementing change. Implemented: steps 1-12 are

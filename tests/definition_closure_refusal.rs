@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! The definition-closure refusal vocabulary through the public `definition` API (TC-924).
 
-use ix_trace_rs::trace;
-use quire_semantic_value::definition::{
+use filament_semantic_value::definition::{
     PackageCause, PackageRefusal, PackageRefusalCode, SelectionRefusalCode,
 };
+use ix_trace_rs::trace;
 
 const CAUSES: [PackageCause; 3] = [
     PackageCause::MissingMember,

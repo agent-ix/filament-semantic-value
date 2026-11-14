@@ -44,7 +44,7 @@ pub fn render_identity(identity: &[u8]) -> String {
 
 /// ADR-013 O-16: the outcome category every evaluation, negotiation and proof
 /// result maps into. Exactly the ten values ADR-013 §3 O-16's category
-/// table names in its first column; not a kernel type (`quire-exact` carries
+/// table names in its first column; not a kernel type (`filament-exact` carries
 /// no category), and this crate is its only owner. Category-mapping
 /// functions from each family's own outcome (C-08, C-09, C-23) match this
 /// enum exhaustively with no `_` arm, so an additional category fails every one of
@@ -152,8 +152,8 @@ impl core::fmt::Display for Category {
     }
 }
 
-/// ADR-013 O-17: one `quire.native.diagnostics/v1` code and cause, exactly as
-/// the `quire.native.diagnostics/v1` catalog spells them. Every
+/// ADR-013 O-17: one `filament.native.diagnostics/v1` code and cause, exactly as
+/// the `filament.native.diagnostics/v1` catalog spells them. Every
 /// `catalog_code()` across every stage returns this same
 /// type (C-15); there is no conversion back to a typed cause, and no
 /// consumer reads the catalog's message -- only the code, the cause and the
@@ -241,7 +241,7 @@ impl core::fmt::Display for CatalogCode {
 pub struct InternalFault {
     stage: &'static str,
     invariant: &'static str,
-    kernel_cause: Option<quire_exact::CheckedInvariantCause>,
+    kernel_cause: Option<filament_exact::CheckedInvariantCause>,
     named: Vec<(&'static str, String)>,
 }
 
@@ -276,7 +276,7 @@ impl InternalFault {
     pub const fn from_kernel(
         stage: &'static str,
         invariant: &'static str,
-        cause: quire_exact::CheckedInvariantCause,
+        cause: filament_exact::CheckedInvariantCause,
     ) -> Self {
         Self {
             stage,
@@ -286,8 +286,8 @@ impl InternalFault {
         }
     }
 
-    /// The received kernel cause; QSL-owned invariant faults have no kernel cause.
-    pub const fn kernel_cause(&self) -> Option<quire_exact::CheckedInvariantCause> {
+    /// The received kernel cause; FSL-owned invariant faults have no kernel cause.
+    pub const fn kernel_cause(&self) -> Option<filament_exact::CheckedInvariantCause> {
         self.kernel_cause
     }
 
@@ -363,7 +363,7 @@ pub trait UndefinedCoded: core::fmt::Debug + Send + Sync + 'static {
 }
 
 /// ADR-013 O-16: the closed reason set of the
-/// `quire.native.diagnostics/v1` "Undefined reasons" table -- the catalog
+/// `filament.native.diagnostics/v1` "Undefined reasons" table -- the catalog
 /// states this is not a refusal code or cause. Grows by one variant each
 /// time a family adds a new evaluation-time undefined result, the same way
 /// a family-dispatch cause set grows.

@@ -3,19 +3,19 @@ id: FR-131
 title: "Compare enum declarations by admitted identity and exact structure"
 type: FR
 relationships:
-  - target: "ix://agent-ix/quire-semantic-value/FR-128"
+  - target: "ix://agent-ix/filament-semantic-value/FR-128"
     type: "depends_on"
-  - target: "ix://agent-ix/quire-specification/FR-141"
+  - target: "ix://agent-ix/filament-specification/FR-141"
     type: "depends_on"
 ---
 # FR-131: Compare enum declarations by admitted identity and exact structure
 
 ## Description
 
-When `compare_enum` receives two admitted `EnumValue` operands, `quire-semantic-value` SHALL
+When `compare_enum` receives two admitted `EnumValue` operands, `filament-semantic-value` SHALL
 refuse `DistinctEnumDeclarations` unless their caller-admitted declaration
 `NodeKey`, ordered flag, and complete declaration member lists in canonical order are
-equal by typed comparison. `quire-semantic-value` SHALL retain in each value the
+equal by typed comparison. `filament-semantic-value` SHALL retain in each value the
 complete member list from the `EnumDeclaration` that admitted it, including members
 other than the selected case.
 
@@ -27,15 +27,15 @@ other than the selected case.
 
 ## Behavior
 
-1. `quire-semantic-value` SHALL retain its declaration's complete member list
+1. `filament-semantic-value` SHALL retain its declaration's complete member list
    through `EnumDeclaration::member`
    in the resulting `EnumValue`, in the same order and with exact case names.
 2. Before performing the member comparison or charging the meter,
-   `quire-semantic-value` SHALL compare through `compare_enum` the operands'
+   `filament-semantic-value` SHALL compare through `compare_enum` the operands'
    admitted declaration keys, ordered flags, and
    complete member lists. If any component differs, it SHALL return
    `IllTypedCause::DistinctEnumDeclarations`.
-3. When those components are equal, `quire-semantic-value` SHALL apply the existing
+3. When those components are equal, `filament-semantic-value` SHALL apply the existing
    unordered-enum ordering refusal and member-comparison schedule.
 
 ## Acceptance Criteria
@@ -51,9 +51,9 @@ other than the selected case.
 
 - [FR-128](./FR-128-consume-structural-identities.md) governs typed identity
   consumption.
-- `ix://agent-ix/quire-specification/FR-141` defines the enum comparison schedule.
+- `ix://agent-ix/filament-specification/FR-141` defines the enum comparison schedule.
 - The caller admits the declaration `NodeKey` and owns its owner-sensitive
-  identity contract. QSV accepts that key as supplied; it cannot distinguish
+  identity contract. FSV accepts that key as supplied; it cannot distinguish
   two owners represented by an identical supplied key.
 
 ## Status

@@ -5,7 +5,7 @@
 //!
 //! Each refusal names its stable catalog code as a string
 //! ([`InputRefusal::code`]) and its closed cause tag ([`InputRefusal::cause`]).
-//! This crate depends on `quire-exact` only, so it cannot name a diagnostic
+//! This crate depends on `filament-exact` only, so it cannot name a diagnostic
 //! `Code` enum; a consumer maps each refusal to its own enum, and pins that
 //! enum's spelling to this string for every variant.
 
@@ -13,7 +13,7 @@ use alloc::string::String;
 
 /// A runtime input a call or evaluation refuses before any charge.
 ///
-/// quire:canonical
+/// filament:canonical
 #[derive(Clone, Debug, Eq, PartialEq, thiserror::Error)]
 pub enum InputRefusal {
     /// No function of this name: `missing_declaration` / `missing-name`.
@@ -42,18 +42,18 @@ pub enum InputRefusal {
         /// The parameter index.
         parameter: usize,
     },
-    /// QSL FR-107: `evaluate_clause`'s name resolves to no state clause of this
+    /// FSL FR-107: `evaluate_clause`'s name resolves to no state clause of this
     /// package: `missing_declaration` / `missing-name`.
     #[error("no state clause named {0}")]
     UnknownClause(String),
-    /// QSL FR-107: `evaluate_clause`'s observations were admitted for a
-    /// different clause than the one named, or (QSL FR-115) `evaluate_frame`'s
+    /// FSL FR-107: `evaluate_clause`'s observations were admitted for a
+    /// different clause than the one named, or (FSL FR-115) `evaluate_frame`'s
     /// invocation for a different frame: `invalid_runtime_input` /
     /// `wrong-role-mapping`.
     #[error("the observations were admitted for another clause or frame")]
     ObservationsMismatch,
-    /// QSL FR-107: `evaluate_clause_set`'s slice names one clause twice:
-    /// `invalid_runtime_input` / `duplicate-member` (the catalogue pair QSL
+    /// FSL FR-107: `evaluate_clause_set`'s slice names one clause twice:
+    /// `invalid_runtime_input` / `duplicate-member` (the catalogue pair FSL
     /// FR-106-AC-43 also uses).
     #[error("the clause set names {0} more than once")]
     DuplicateClause(String),

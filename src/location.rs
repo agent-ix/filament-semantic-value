@@ -4,7 +4,7 @@
 //! declaration's root expression ([`ExpressionLocation`]). A checking refusal, an
 //! evaluation outcome and a loss record are all located this way.
 //!
-//! These are not `quire_exact::{Origin, Location}`: those name a checked
+//! These are not `filament_exact::{Origin, Location}`: those name a checked
 //! node's source occurrence. These name a position
 //! inside a package's expression trees.
 
@@ -41,14 +41,14 @@ pub enum ExpressionOwner {
     /// `generated` occurrence of a node that no function body, measure,
     /// state clause or protocol attempt reaches, when this is the least
     /// declared name that reaches it (`lowering::enclosing_declarations`). It
-    /// names the declared name's region when the QSL FR-091 assembler read the
+    /// names the declared name's region when the FSL FR-091 assembler read the
     /// name from the unit, and no region for a type declared by hand
-    /// (QSL FR-096).
+    /// (FSL FR-096).
     TypeDeclaration {
         /// The declared name.
         name: String,
     },
-    /// The body of the named state clause (QSL FR-104), at this zero-based
+    /// The body of the named state clause (FSL FR-104), at this zero-based
     /// index among the unit's state clauses in source order. The clause's
     /// `claim` occurrence is located at its root.
     StateClause {
@@ -57,14 +57,14 @@ pub enum ExpressionOwner {
         /// The clause's index among the package's state clauses.
         index: usize,
     },
-    /// One protocol `attempt`'s own operation binding (QSL FR-114), by
+    /// One protocol `attempt`'s own operation binding (FSL FR-114), by
     /// the protocol's index among the package's protocols and the
     /// attempt's index among that protocol's own `attempts`, both in
     /// source order. An `operation_anchor`/`frame` node names no position
     /// of its own, so this names a real position of the unit (the
     /// attempt's own declared name) to resolve its generated occurrence's
     /// region, the same way `ExpressionOwner::StateClause` does for a `pre`/`post`
-    /// clause's own anchor (QSL FR-096).
+    /// clause's own anchor (FSL FR-096).
     ProtocolAttempt {
         /// The protocol's index among the package's protocols.
         protocol: usize,
@@ -72,7 +72,7 @@ pub enum ExpressionOwner {
         attempt: usize,
     },
     /// One `requires` or `ensures` clause a domain package authors on a
-    /// model operation (QSL FR-103). It is not a unit state clause, so it
+    /// model operation (FSL FR-103). It is not a unit state clause, so it
     /// is not counted by [`ExpressionOwner::StateClause`]'s index.
     ModelOperationClause {
         /// The operation's identifying text.

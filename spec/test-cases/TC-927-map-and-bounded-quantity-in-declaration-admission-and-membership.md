@@ -3,7 +3,7 @@ id: TC-927
 title: "Map and BoundedQuantity in declaration admission and membership through the public API"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-127
+  - target: ix://agent-ix/filament-semantic-value/FR-127
     type: verifies
 ---
 # TC-927: Map and BoundedQuantity in declaration admission and membership through the public API

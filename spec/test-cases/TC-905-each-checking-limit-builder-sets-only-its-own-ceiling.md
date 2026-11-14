@@ -3,7 +3,7 @@ id: TC-905
 title: "Each checking limit builder sets only its own ceiling"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-107
+  - target: ix://agent-ix/filament-semantic-value/FR-107
     type: verifies
 ---
 # TC-905: Each checking limit builder sets only its own ceiling

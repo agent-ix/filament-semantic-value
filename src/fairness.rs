@@ -3,10 +3,10 @@
 
 use alloc::string::String;
 
+use filament_exact::EffectiveId;
 use quire_canonical::{Encode, Error, Sink, Writer};
-use quire_exact::EffectiveId;
 
-/// The checked temporal property classification selected by QSL.
+/// The checked temporal property classification selected by FSL.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum PropertyForm {
     /// A reachable-state invariant.
@@ -206,9 +206,9 @@ mod tests {
     use std::string::String;
     use std::vec;
 
+    use filament_exact::EffectiveId;
     use ix_trace_rs::trace;
     use quire_canonical::{to_vec, Error, Limits};
-    use quire_exact::EffectiveId;
 
     use super::{
         FairnessConstraint, FairnessGranularity, FairnessKind, FairnessOperation, PropertyForm,
@@ -385,7 +385,7 @@ mod tests {
     #[test]
     fn canonical_constraint_bytes_reflect_every_field_and_escape_names() {
         let base = constraint(FairnessKind::Weak, 0, "tick", FairnessGranularity::Whole);
-        let expected = b"{\"granularity\":\"whole\",\"kind\":\"weak\",\"operation\":{\"declaring_type\":{\"original\":{\"node\":\"Type000\",\"package\":\"qsv-test\"},\"owner_effective_type\":null},\"name\":\"tick\"}}";
+        let expected = b"{\"granularity\":\"whole\",\"kind\":\"weak\",\"operation\":{\"declaring_type\":{\"original\":{\"node\":\"Type000\",\"package\":\"fsv-test\"},\"owner_effective_type\":null},\"name\":\"tick\"}}";
         let encoded = to_vec(&base, limits(4096)).expect("canonical constraint");
         assert_eq!(encoded, expected);
         for changed in [
@@ -401,7 +401,7 @@ mod tests {
         }
         let quoted = constraint(FairnessKind::Weak, 0, "t\"ick", FairnessGranularity::Whole);
         let quoted_bytes = to_vec(&quoted, limits(4096)).expect("quoted name");
-        let expected_quoted = b"{\"granularity\":\"whole\",\"kind\":\"weak\",\"operation\":{\"declaring_type\":{\"original\":{\"node\":\"Type000\",\"package\":\"qsv-test\"},\"owner_effective_type\":null},\"name\":\"t\\\"ick\"}}";
+        let expected_quoted = b"{\"granularity\":\"whole\",\"kind\":\"weak\",\"operation\":{\"declaring_type\":{\"original\":{\"node\":\"Type000\",\"package\":\"fsv-test\"},\"owner_effective_type\":null},\"name\":\"t\\\"ick\"}}";
         assert_eq!(quoted_bytes, expected_quoted);
     }
 
@@ -429,7 +429,7 @@ mod tests {
         }
         let value = constraint(FairnessKind::Weak, 0, "tick", FairnessGranularity::Whole);
         let operation = value.operation();
-        let expected = b"{\"declaring_type\":{\"original\":{\"node\":\"Type000\",\"package\":\"qsv-test\"},\"owner_effective_type\":null},\"name\":\"tick\"}";
+        let expected = b"{\"declaring_type\":{\"original\":{\"node\":\"Type000\",\"package\":\"fsv-test\"},\"owner_effective_type\":null},\"name\":\"tick\"}";
         assert_eq!(
             to_vec(operation, limits(4096)).expect("operation"),
             expected
@@ -438,7 +438,7 @@ mod tests {
             crate::test_identity::effective_child(id(0), 1),
             String::from("tick"),
         );
-        let expected_owned = b"{\"declaring_type\":{\"original\":{\"node\":\"Member001\",\"package\":\"qsv-test\"},\"owner_effective_type\":{\"original\":{\"node\":\"Type000\",\"package\":\"qsv-test\"},\"owner_effective_type\":null}},\"name\":\"tick\"}";
+        let expected_owned = b"{\"declaring_type\":{\"original\":{\"node\":\"Member001\",\"package\":\"fsv-test\"},\"owner_effective_type\":{\"original\":{\"node\":\"Type000\",\"package\":\"fsv-test\"},\"owner_effective_type\":null}},\"name\":\"tick\"}";
         assert_eq!(
             to_vec(&owned_type, limits(4096)).expect("structural owner chain"),
             expected_owned

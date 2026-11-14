@@ -4,7 +4,7 @@
 //! produced it ([`LocatedLoss`]). A completed evaluation reports them in
 //! evaluation order.
 
-use quire_exact::{DecimalLoss, IeeeExactLoss, IeeeFlags};
+use filament_exact::{DecimalLoss, IeeeExactLoss, IeeeFlags};
 
 use crate::location::ExpressionLocation;
 

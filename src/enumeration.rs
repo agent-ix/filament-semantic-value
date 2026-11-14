@@ -14,7 +14,7 @@ use alloc::vec::Vec;
 
 use crate::semantic_node::{InvalidSemanticGraph, SemanticGraphCause};
 use crate::stop::{outcome_from_stop, Stop};
-use quire_exact::{
+use filament_exact::{
     is_identifier, Charge, ChargePoint, ComparisonOperator, IllTyped, IllTypedCause, LimitKind,
     Meter, NodeKey, Outcome, VariantId,
 };
@@ -137,7 +137,7 @@ impl EnumDeclaration {
     ///
     /// The position and the ordered flag come from this declaration. The
     /// member key is taken as given: it is the caller's admitted
-    /// `quire.enum-member-node/v1` key for `case`, and nothing here checks
+    /// `filament.enum-member-node/v1` key for `case`, and nothing here checks
     /// it against the case (this crate mints and verifies no key). A wrong key gives
     /// a value whose `=` (member keys) and ordering (positions) disagree.
     pub fn member(&self, case: &str, member: NodeKey) -> Result<EnumValue, InvalidSemanticGraph> {
@@ -199,7 +199,7 @@ impl EnumValue {
     }
 
     /// Zero-based QSpec FR-141 canonical-list position of the member: the same
-    /// value `quire_exact::EnumMember::rank` carries once a caller
+    /// value `filament_exact::EnumMember::rank` carries once a caller
     /// pairs it with this member's [`Self::variant`]. A caller building an
     /// `EnumShape`/`Value::Enum` from an admitted [`EnumValue`] needs it.
     pub fn position(&self) -> usize {
@@ -234,7 +234,7 @@ impl EnumValue {
 /// index, built once as the checking stage admits each enum member and consulted
 /// wherever an evaluated kernel `Value::Enum` (a bare `VariantId` and rank)
 /// needs its declaration, ordered flag, position or case name back. The
-/// kernel is a leaf and carries none of this (`quire_exact::value`'s own
+/// kernel is a leaf and carries none of this (`filament_exact::value`'s own
 /// module doc); the QSpec FR-141 enum-specific `=`/ordering schedule
 /// ([`compare_enum`], `declaration::CheckedEquality`'s `Enum`
 /// schedule, and an evaluator's ordered-enum arm)
@@ -335,8 +335,8 @@ fn compare(
 mod tests {
     use super::*;
     use alloc::vec;
+    use filament_exact::ScalarLimits;
     use ix_trace_rs::trace;
-    use quire_exact::ScalarLimits;
 
     #[allow(
         clippy::disallowed_methods,

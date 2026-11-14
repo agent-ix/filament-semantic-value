@@ -27,7 +27,7 @@ use core::hash::{Hash, Hasher};
 
 use quire_canonical::{Encode, Error, LimitExceeded, LimitKind, Limits, Sink, Writer};
 
-use quire_exact::{
+use filament_exact::{
     Integer, IntegerCopyError, IntegerDecimalError, InvalidNodeKey, NodeKey, NodeKeyView,
     PathSegmentView, Rational, UnitId,
 };
@@ -228,7 +228,7 @@ impl Unit {
     }
 
     /// The declared-arm [`UnitId`]: this admitted unit's node key under the
-    /// `quire.checked-semantic-node/v1` label.
+    /// `filament.checked-semantic-node/v1` label.
     pub fn id(&self) -> UnitId {
         UnitId::declared(self.key.clone())
     }
@@ -266,10 +266,10 @@ impl Unit {
     }
 }
 
-/// What lowering builds a dimension's or unit's nominal node from (QSL FR-094),
+/// What lowering builds a dimension's or unit's nominal node from (FSL FR-094),
 /// beyond the graph's topology: the node's qualified declaration name and
-/// the RFC 8785 bytes of its `quire.dimension-node/v1` or
-/// `quire.unit-node/v1` body. The compile side reads and checks both; this
+/// the RFC 8785 bytes of its `filament.dimension-node/v1` or
+/// `filament.unit-node/v1` body. The compile side reads and checks both; this
 /// layer only carries them. Its structural key is admitted separately.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct NominalDeclaration {
@@ -279,7 +279,7 @@ pub struct NominalDeclaration {
     pub preimage: Vec<u8>,
 }
 
-/// An admitted dimension or unit node as lowering builds it (QSL FR-094): its
+/// An admitted dimension or unit node as lowering builds it (FSL FR-094): its
 /// key, its [`NominalDeclaration`], and the admitted nodes its preimage
 /// names, each resolved to its key.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -749,7 +749,7 @@ fn reserve_identity<T, E>(
 /// # Errors
 ///
 /// [`IdentityRefusal::InputBytes`] when the preimage's canonical bytes would
-/// exceed `limits` (QSL FR-259 Behavior 4): nothing bounds the number of
+/// exceed `limits` (FSL FR-259 Behavior 4): nothing bounds the number of
 /// terms or an exponent's size, so a large enough unit reaches any byte
 /// limit. [`IdentityRefusal::Allocation`] reports failed term-vector, encoder
 /// stack, structural-node-copy, integer-copy and decimal-text reservations
@@ -1068,7 +1068,7 @@ mod tests {
         crate::test_identity::node(u64::from(byte))
     }
 
-    /// QSL FR-259 Behavior 4: a compound-unit preimage over the byte limit
+    /// FSL FR-259 Behavior 4: a compound-unit preimage over the byte limit
     /// it is encoded under refuses with that limit and the bytes it needed,
     /// never a panic and never a malformed value. Under the default limit
     /// the same terms have an id.
@@ -1203,7 +1203,7 @@ mod tests {
         )
         .unwrap();
         let expected = alloc::format!(
-            r#"{{"terms":[{{"exponent":"1","unit":{{"ordinal":0,"package":"qsv-test","path":["00000000000000000001"]}}}},{{"exponent":"{spelling}","unit":{{"ordinal":0,"package":"qsv-test","path":["00000000000000000002"]}}}}]}}"#
+            r#"{{"terms":[{{"exponent":"1","unit":{{"ordinal":0,"package":"fsv-test","path":["00000000000000000001"]}}}},{{"exponent":"{spelling}","unit":{{"ordinal":0,"package":"fsv-test","path":["00000000000000000002"]}}}}]}}"#
         );
         assert_eq!(canonical, expected.as_bytes());
         let complete_len = u64::try_from(canonical.len()).unwrap();

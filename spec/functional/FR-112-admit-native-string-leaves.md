@@ -3,30 +3,30 @@ id: FR-112
 title: "Admit native String values and preserve them in composite values"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-exact/FR-370
+  - target: ix://agent-ix/filament-exact/FR-370
     type: references
 ---
 # FR-112: Admit native String values and preserve them in composite values
 
 ## Description
 
-`quire-semantic-value` SHALL treat the kernel's native String type as a
-terminal semantic-value type distinct from Text. QSV SHALL admit matching
+`filament-semantic-value` SHALL treat the kernel's native String type as a
+terminal semantic-value type distinct from Text. FSV SHALL admit matching
 String values directly and through declared composite members while preserving
 the kernel String value and its equality semantics. Text normalization and Text
 admission rules do not apply to native String values.
 
 ## Behavior
 
-1. QSV SHALL accept `ValueType::String` as a terminal declared type, with no
+1. FSV SHALL accept `ValueType::String` as a terminal declared type, with no
    IEEE value and no composite-recursion edge. Type admission SHALL accept
    `Value::String` only under `ValueType::String` and SHALL refuse a Text value
    under String and a String value under Text.
-2. When QSV compares two String operands for equality, QSV SHALL return the
+2. When FSV compares two String operands for equality, FSV SHALL return the
    kernel-defined exact scalar-sequence result.
-3. QSV's equality check SHALL NOT normalize a String value as Text before
+3. FSV's equality check SHALL NOT normalize a String value as Text before
    equality.
-4. QSV SHALL admit a record declaration with a required String member, construct
+4. FSV SHALL admit a record declaration with a required String member, construct
    that record from a matching String value, preserve that value in the record
    slot, and admit the resulting record under its declared composite type.
 
@@ -39,6 +39,6 @@ admission rules do not apply to native String values.
 
 ## Dependencies
 
-- [Quire Exact FR-370](ix://agent-ix/quire-exact/FR-370) owns the kernel's native
-  semantic-value types and values. QSV preserves the native String value and
+- [Filament Exact FR-370](ix://agent-ix/filament-exact/FR-370) owns the kernel's native
+  semantic-value types and values. FSV preserves the native String value and
   delegates its scalar equality semantics to the kernel.

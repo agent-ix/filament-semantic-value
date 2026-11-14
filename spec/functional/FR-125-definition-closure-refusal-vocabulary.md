@@ -3,14 +3,14 @@ id: FR-125
 title: "Own the closed refusal vocabulary of definition-closure admission"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-specification/FR-272
+  - target: ix://agent-ix/filament-specification/FR-272
     type: references
 ---
 # FR-125: Own the closed refusal vocabulary of definition-closure admission
 
 ## Description
 
-`quire-semantic-value` SHALL own the refusal vocabulary that definition-closure
+`filament-semantic-value` SHALL own the refusal vocabulary that definition-closure
 admission reports: the lock's eight `selection_refusal_codes`
 (`SelectionRefusalCode`), the one diagnostic code `invalid_package`
 (`PackageRefusalCode::InvalidPackage`) and the three causes it pairs with here

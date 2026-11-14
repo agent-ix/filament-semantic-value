@@ -3,7 +3,7 @@ id: TC-929
 title: "External type checking preserves semantics under fallible storage"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-132
+  - target: ix://agent-ix/filament-semantic-value/FR-132
     type: verifies
 ---
 # TC-929: External type checking preserves semantics under fallible storage

@@ -3,21 +3,21 @@ id: FR-126
 title: "Own the catalog vocabulary, supplied-value stop records and supplied-value run an evaluation result carries"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-spec-language/FR-401
+  - target: ix://agent-ix/filament-spec-language/FR-401
     type: implements
-  - target: ix://agent-ix/quire-spec-language/FR-403
+  - target: ix://agent-ix/filament-spec-language/FR-403
     type: implements
 ---
 # FR-126: Own the catalog vocabulary, supplied-value stop records and supplied-value run an evaluation result carries
 
 ## Description
 
-`quire-semantic-value` SHALL own the native-diagnostics vocabulary, the
+`filament-semantic-value` SHALL own the native-diagnostics vocabulary, the
 supplied-value stop records that an evaluation result names, and the
 supplied-value run (`SuppliedRun`) that produces them, so the shared
-evaluation interface (`quire-eval`, QSL FR-401) carries them without depending
-on a compiler crate. QSL FR-401's placement table assigns the vocabulary and
-records here, and QSL FR-403's disposition table assigns the run and
+evaluation interface (`filament-eval`, FSL FR-401) carries them without depending
+on a compiler crate. FSL FR-401's placement table assigns the vocabulary and
+records here, and FSL FR-403's disposition table assigns the run and
 `render_identity` here.
 
 ## Outputs
@@ -111,6 +111,6 @@ records here, and QSL FR-403's disposition table assigns the run and
 
 - IR-1281 implements the ten-category contract above; this specification
   update precedes its implementation and test changes. Consumer adoption in
-  QSL is separate work.
+  FSL is separate work.
 
-- QSL FR-401 places these types; QSL FR-262 names them in the interface.
+- FSL FR-401 places these types; FSL FR-262 names them in the interface.

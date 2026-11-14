@@ -102,7 +102,7 @@ impl PackageCause {
 
 /// `refused { code, cause }` at semantic admission.
 ///
-/// quire:canonical
+/// filament:canonical
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, thiserror::Error)]
 #[error("{}: {}", code.as_str(), cause.as_str())]
 pub struct PackageRefusal {

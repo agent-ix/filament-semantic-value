@@ -4,20 +4,20 @@ title: "Bound retained Decimal type-link comparison in supplied membership"
 type: FR
 org: agent-ix
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-109
+  - target: ix://agent-ix/filament-semantic-value/FR-109
     type: references
-  - target: ix://agent-ix/quire-semantic-value/FR-117
+  - target: ix://agent-ix/filament-semantic-value/FR-117
     type: references
-  - target: ix://agent-ix/quire-specification/FR-140
+  - target: ix://agent-ix/filament-specification/FR-140
     type: references
-  - target: ix://agent-ix/quire-exact/FR-382
+  - target: ix://agent-ix/filament-exact/FR-382
     type: depends_on
 ---
 # FR-118: Bound retained Decimal type-link comparison in supplied membership
 
 ## Description
 
-When supplied membership compares paired retained `Decimal` type links, QSV SHALL use
+When supplied membership compares paired retained `Decimal` type links, FSV SHALL use
 the caller's authenticated finite numeric magnitude ceiling `B` and
 an exact-kernel bounded, cancellable `DecimalType` equality operation. The
 comparison concerns declared type identity, not mathematical equality of
@@ -30,7 +30,7 @@ Decimal values or Decimal value membership.
   `Cancel` handle.
 - The finite `B` configured by the initiating caller for this invocation.
   The same `B` applies to every retained Decimal domain endpoint and numeric
-  value reached in the invocation. QSV's direct API supplies no default.
+  value reached in the invocation. FSV's direct API supplies no default.
 
 ## Outputs
 
@@ -39,14 +39,14 @@ Decimal values or Decimal value membership.
 
 ## Behavior
 
-1. For each compared pair of links, QSV SHALL request exactly one
+1. For each compared pair of links, FSV SHALL request exactly one
    `TypeLinkComparison` event at the current zero-based link ordinal before
    invoking Decimal equality. Event denial SHALL prevent helper entry and
    retain the caller's prior successful spend. The budget SHALL poll the
    original `Cancel` before spending the event: pre-cancellation adds no
    spend. If cancellation is observed after that event succeeds, the
    initiating event remains spent once, including when the helper stops.
-2. For paired Decimal links under configured `B`, QSV SHALL pass the borrowed
+2. For paired Decimal links under configured `B`, FSV SHALL pass the borrowed
    expected `DecimalType` first, actual `DecimalType` second, `B`, and the
    original `Cancel` to the exact kernel. Before deciding equality, that
    operation SHALL check magnitude bits, with zero counting as one bit, in
@@ -60,19 +60,19 @@ Decimal values or Decimal value membership.
    exactly. It SHALL NOT normalize, align, round, widen or infer a type.
    A completed `true` SHALL continue the walk. A completed `false` SHALL
    return the established invalid-type cause at this link. The exact kernel
-   owns bounded borrowed-limb comparison and cancellation polling; QSV SHALL
+   owns bounded borrowed-limb comparison and cancellation polling; FSV SHALL
    NOT duplicate that algorithm or fall through to unbounded `ValueType`
-   equality. [Exact FR-382](ix://agent-ix/quire-exact/FR-382) establishes
+   equality. [Exact FR-382](ix://agent-ix/filament-exact/FR-382) establishes
    four fixed-width endpoint checks and, with `L = ceil(B / 32)`, at most
    `2L` fixed-width limb-pair steps, constant auxiliary storage and no
    input-sized clone, scratch allocation or native-size conversion. Its
    helper polls the original `Cancel` before bound validation, before each
    endpoint check, before each limb-pair step and before publishing equality.
    The arithmetic cancellation-response gap is at most one fixed-width
-   limb-pair step. QSV SHALL verify the published exact-kernel source against
+   limb-pair step. FSV SHALL verify the published exact-kernel source against
    these [FR-109](./FR-109-bound-supplied-value-traversal.md) qualification
    premises before claiming its own paired Decimal admission path supported.
-4. QSV SHALL retain a kernel size stop as typed unsupported size with operand
+4. FSV SHALL retain a kernel size stop as typed unsupported size with operand
    position, measured bits, `B` and this locus. It SHALL retain the original
    cancellation cause at the same locus, distinct from invalid type and
    supplied work-budget limit. The published allocation-free helper exposes
@@ -81,12 +81,12 @@ Decimal values or Decimal value membership.
    event or evaluator debit. A QSpec consumer SHALL project an over-`B` stop
    as `supplied.numeric_magnitude_bits` on the charged `type-comparison`
    event, distinct from work-budget exhaustion.
-5. If no authentic `B` is configured, QSV SHALL return
+5. If no authentic `B` is configured, FSV SHALL return
    `UnsupportedHelper::DecimalDomain` at the rooted link after a permitted
    `TypeLinkComparison` event and before Decimal equality. Event denial or
    cancellation at that boundary SHALL retain [FR-109](./FR-109-bound-supplied-value-traversal.md)
    precedence. Nested Option and Collection links and later arguments SHALL
-   reuse the same budget and cancellation handle. QSV SHALL preserve `no_std`
+   reuse the same budget and cancellation handle. FSV SHALL preserve `no_std`
    and its unsafe prohibition.
 
 ## Acceptance Criteria
@@ -97,7 +97,7 @@ Decimal values or Decimal value membership.
 | FR-118-AC-2 | With configured B, all four coefficient bounds at B complete. Each bound at B+1 yields typed unsupported size naming expected/actual and lower/upper, measured bits, B and rooted locus. Simultaneously oversized bounds refuse in expected-lower, expected-upper, actual-lower, actual-upper order. Zero counts as one bit, so B=1 admits it and B=0 refuses at expected lower. A scale or rounding-mode difference yields invalid type only after all four bounds pass. | Test |
 | FR-118-AC-3 | Pre-cancellation retains the original cause and prior cumulative spend with zero new charge at the target type-link event. Cancellation during an admitted longest coefficient comparison retains the original cause and prior spend plus the one initiating event, with no next comparison or evaluator charge. Both stops retain the rooted link locus. | Test |
 | FR-118-AC-4 | With no configured B, a permitted paired Decimal link returns `UnsupportedHelper::DecimalDomain` after its event without helper entry. Event denial and cancellation from the caller's original Cancel retain their established precedence. | Test |
-| FR-118-AC-5 | Inspection of the published exact-kernel source confirms one authentic B, expected-first borrowed operands and original Cancel reach `DecimalType::try_eq_bounded`; four bound checks, at most 2ceil(B/32) fixed-width limb-pair steps, at most one endpoint check or limb-pair step between cancellation polls, and constant auxiliary storage are established without allocation or native-size conversion. No unbounded `ValueType` equality or QSV-owned duplicate comparator decides paired Decimal links. | Inspection |
+| FR-118-AC-5 | Inspection of the published exact-kernel source confirms one authentic B, expected-first borrowed operands and original Cancel reach `DecimalType::try_eq_bounded`; four bound checks, at most 2ceil(B/32) fixed-width limb-pair steps, at most one endpoint check or limb-pair step between cancellation polls, and constant auxiliary storage are established without allocation or native-size conversion. No unbounded `ValueType` equality or FSV-owned duplicate comparator decides paired Decimal links. | Inspection |
 
 ## Dependencies
 
@@ -106,12 +106,12 @@ Decimal values or Decimal value membership.
 - [FR-117](./FR-117-bound-retained-numeric-type-links.md) establishes the
   neighboring Int/Rational type-link boundary; its helper does not compare
   Decimal domains.
-- [QSpec FR-140](ix://agent-ix/quire-specification/FR-140) defines the five
+- [QSpec FR-140](ix://agent-ix/filament-specification/FR-140) defines the five
   declared Decimal type fields.
-- [Exact FR-382](ix://agent-ix/quire-exact/FR-382), delivered by IR-799,
+- [Exact FR-382](ix://agent-ix/filament-exact/FR-382), delivered by IR-799,
   owns the published bounded, cancellable `DecimalType::try_eq_bounded`
   operation. The typed frontmatter edge records this implementation
-  dependency. QSV implementation and acceptance remain unrun.
+  dependency. FSV implementation and acceptance remain unrun.
 - QSL-772 supplies the real public checked-call and replay consumer vector.
 
 ## Status

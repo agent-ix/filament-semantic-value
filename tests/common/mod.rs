@@ -7,20 +7,20 @@
 
 use std::{format, string::String, vec, vec::Vec};
 
-use quire_exact::{
+use filament_exact::{
     EffectiveId, NodeKey, OriginalDeclarationKey, PathSegment, UniverseId, VariantId,
 };
 
 #[allow(
     clippy::disallowed_methods,
-    reason = "the single shared test fixture supplies structural identities; QSV production carries them"
+    reason = "the single shared test fixture supplies structural identities; FSV production carries them"
 )]
 fn fixture_node(package: &str, path: Vec<PathSegment>, ordinal: u64) -> NodeKey {
     NodeKey::new(package, path, ordinal).expect("fixture node components are valid")
 }
 
 pub fn node(n: u64) -> NodeKey {
-    fixture_node("qsv-test", vec![PathSegment::Text(format!("{n:020}"))], 0)
+    fixture_node("fsv-test", vec![PathSegment::Text(format!("{n:020}"))], 0)
 }
 
 pub fn node_parts(package: &str, path: &str, ordinal: u64) -> NodeKey {
@@ -29,14 +29,14 @@ pub fn node_parts(package: &str, path: &str, ordinal: u64) -> NodeKey {
 
 #[allow(
     clippy::disallowed_methods,
-    reason = "test fixtures supply structural identities; QSV production never constructs them"
+    reason = "test fixtures supply structural identities; FSV production never constructs them"
 )]
 fn fixture_effective(owner: Option<EffectiveId>, package: &str, original: String) -> EffectiveId {
     EffectiveId::new(owner, OriginalDeclarationKey::new(package, original))
 }
 
 pub fn effective(n: u64) -> EffectiveId {
-    fixture_effective(None, "qsv-test", format!("Type{n:03}"))
+    fixture_effective(None, "fsv-test", format!("Type{n:03}"))
 }
 
 pub fn effective_parts(package: &str, original: &str, owner: Option<EffectiveId>) -> EffectiveId {
@@ -61,5 +61,5 @@ pub fn nested_node() -> NodeKey {
 }
 
 pub fn effective_child(owner: EffectiveId, n: u64) -> EffectiveId {
-    fixture_effective(Some(owner), "qsv-test", format!("Member{n:03}"))
+    fixture_effective(Some(owner), "fsv-test", format!("Member{n:03}"))
 }

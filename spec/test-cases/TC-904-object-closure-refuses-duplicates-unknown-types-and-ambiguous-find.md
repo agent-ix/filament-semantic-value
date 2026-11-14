@@ -3,7 +3,7 @@ id: TC-904
 title: "The object closure refuses a duplicate identity triple and a non-model object type, and find refuses an ambiguous key"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-106
+  - target: ix://agent-ix/filament-semantic-value/FR-106
     type: verifies
 ---
 # TC-904: The object closure refuses a duplicate identity triple and a non-model object type, and find refuses an ambiguous key

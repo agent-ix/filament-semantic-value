@@ -5,17 +5,17 @@ mod common;
 
 use std::collections::BTreeMap;
 
-use ix_trace_rs::trace;
-use quire_exact::{IllTypedCause, Integer, Rational, ValueType, VariantId};
-use quire_semantic_value::declaration::{
+use filament_exact::{IllTypedCause, Integer, Rational, ValueType, VariantId};
+use filament_semantic_value::declaration::{
     CompositeDeclaration, CompositeShape, DeclarationCause, EnvironmentFailure, FieldDeclaration,
     ObjectTypeDeclaration, TypeEnvironment,
 };
-use quire_semantic_value::enumeration::{EnumDeclaration, EnumMemberIndex};
-use quire_semantic_value::semantic_node::{InvalidSemanticGraph, SemanticGraphCause};
-use quire_semantic_value::unit::{DimensionNode, NominalDeclaration, UnitGraph, UnitNode};
+use filament_semantic_value::enumeration::{EnumDeclaration, EnumMemberIndex};
+use filament_semantic_value::semantic_node::{InvalidSemanticGraph, SemanticGraphCause};
+use filament_semantic_value::unit::{DimensionNode, NominalDeclaration, UnitGraph, UnitNode};
+use ix_trace_rs::trace;
 
-fn root(dimension: quire_exact::NodeKey) -> UnitNode {
+fn root(dimension: filament_exact::NodeKey) -> UnitNode {
     UnitNode::checked(
         dimension,
         None,
@@ -113,7 +113,7 @@ fn effective_components_separate_object_and_reference_checks() {
                 CompositeShape::Record(vec![FieldDeclaration::new(
                     "ref",
                     ValueType::Reference(key.clone()),
-                    quire_exact::Presence::Required,
+                    filament_exact::Presence::Required,
                 )]),
             )],
             [ObjectTypeDeclaration::new(admitted.clone(), "Type", vec![])],

@@ -11,7 +11,7 @@ use alloc::vec::Vec;
 use core::alloc::Layout;
 use core::sync::atomic::{AtomicUsize, Ordering};
 
-use quire_exact::{Cancel, CancelCause, NumericMembershipOperand, NumericTypeEndpoint};
+use filament_exact::{Cancel, CancelCause, NumericMembershipOperand, NumericTypeEndpoint};
 
 /// A bound of a retained `BoundedQuantity` type link checked against the
 /// caller's admitted magnitude ceiling, in the stable measuring order.
@@ -702,7 +702,7 @@ mod tests {
     use alloc::{vec, vec::Vec};
     use core::sync::atomic::{AtomicUsize, Ordering};
 
-    use quire_exact::{Cancel, CancelCause};
+    use filament_exact::{Cancel, CancelCause};
 
     use crate::declaration::{StorageRequest, StorageUnit};
 

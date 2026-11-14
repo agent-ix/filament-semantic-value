@@ -3,22 +3,22 @@ id: FR-113
 title: "Admit composite values under declared composite supertypes"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-specification/FR-208
+  - target: ix://agent-ix/filament-specification/FR-208
     type: references
-  - target: ix://agent-ix/quire-spec-language/FR-359
+  - target: ix://agent-ix/filament-spec-language/FR-359
     type: references
-  - target: ix://agent-ix/quire-exact/FR-376
+  - target: ix://agent-ix/filament-exact/FR-376
     type: depends_on
-  - target: ix://agent-ix/quire-exact/FR-377
+  - target: ix://agent-ix/filament-exact/FR-377
     type: depends_on
-  - target: ix://agent-ix/quire-exact/FR-378
+  - target: ix://agent-ix/filament-exact/FR-378
     type: depends_on
 ---
 # FR-113: Admit composite values under declared composite supertypes
 
 ## Description
 
-`quire-semantic-value` SHALL represent the direct supertype relation between
+`filament-semantic-value` SHALL represent the direct supertype relation between
 record and tuple declarations and SHALL admit a composite value under any of
 its declared composite supertypes. The value retains its most-specific
 declaration identity; subtype admission does not rewrite the value or change
@@ -41,11 +41,11 @@ conformance.
    continue to reject reverse and unrelated declarations. The accepted value
    retains `sub` as its declaration key, and equality conversion remains based
    on exact composite type identity.
-5. QSV SHALL charge composite graph validation and ancestor-closure work
+5. FSV SHALL charge composite graph validation and ancestor-closure work
    against the environment's `work_units` ceiling.
-6. QSV SHALL return the established typed limit failure whenever a composite
+6. FSV SHALL return the established typed limit failure whenever a composite
    ancestry walk or closure exceeds `ancestor_steps` or `work_units`.
-7. QSV SHALL validate and close composite ancestry with an explicit worklist
+7. FSV SHALL validate and close composite ancestry with an explicit worklist
    rather than native recursion.
 8. `TypeEnvironment::admits` SHALL check the contents of a value against its
    declared type, not only the declared type of its container. The kernel's
@@ -119,7 +119,7 @@ conformance.
     construction and replay; the answer stays a `bool`.
 15. `admits` SHALL refuse a union value at a record or tuple composite slot,
     including a union value that carries that record's or tuple's key, at any
-    depth. QSV declares no union shape in this requirement, so no declaration
+    depth. FSV declares no union shape in this requirement, so no declaration
     admits one.
 
 ## Acceptance Criteria
@@ -131,19 +131,19 @@ conformance.
 | FR-113-AC-3 | With a chain parent `P`, intermediate `M`, child `C` (a grandchild of `P`) and an unrelated record `U`, built with the trusted constructors (`from_admitted`, `form`, `from_admitted_slots`) because the kernel's checked constructors are exact, `admits` accepts an `Option<P>`, a `Sequence`, `Set`, `Bag` or `OrderedSet` of `P`, each keeping its key; the top-level `C` at `P` and `M` already passes. It refuses the same `Option` and collection containers holding a `U`, a `P` at a `C`-typed or `M`-typed version, and `Option<C>` or `Sequence<C>` at `Option<P>` or `Sequence<P>` as a declared type. The refusals for a nonconforming element inside a container whose recorded element type is `P` are the cases only this requirement adds. | Test (TC-913) |
 | FR-113-AC-4 | `Option<Sequence<Option<P>>>` holding a `C` innermost is admitted, and one `U` among conforming elements refuses the whole value. `TypeEnvironment::evaluate_record` and `TypeEnvironment::evaluate_tuple` with a member that completes to a `C` at a `P` member succeed with the child kept, and with a `U` stop with `DeferredResultNotAdmitted`. Record and tuple construction holding a `U` refuses with `TypeMismatch` at the field or position. | Test (TC-913) |
 | FR-113-AC-5 | `operand_value` admits a composite operand of source type `P` holding a `C` or an `M` unchanged and with its own key, and an `Option<P>` or `Sequence<P>` operand holding one. It refuses a `P` operand holding `U`, and a `P` value at source type `C`, with `EqualityOperandSourceNotAdmitted`. A `Reference<T>` operand is still checked by kind only. | Test (TC-913) |
-| FR-113-AC-6 | A `Set<P>` or `Bag<P>` holding a `C` and a `P` of equal shared fields has two elements and is admitted. This vector rests on the quire-exact collection and equality behavior of FR-376 to FR-378. | Test (TC-913) |
+| FR-113-AC-6 | A `Set<P>` or `Bag<P>` holding a `C` and a `P` of equal shared fields has two elements and is admitted. This vector rests on the filament-exact collection and equality behavior of FR-376 to FR-378. | Test (TC-913) |
 | FR-113-AC-7 | A `Reference<T>` inside an `Option` payload or collection element is admitted only when the reference's object type is `T` or conforms to `T`: an `Option<Reference<T>>` or `Sequence<Reference<T>>` holding a reference to a subtype object is admitted, and one holding a reference to an unrelated object type, or a supertype object at a subtype `T`, is refused although the recorded payload or element type matches. | Test (TC-913) |
 | FR-113-AC-8 | A union value whose declaration key is a record's or tuple's key is refused by `admits` at that composite type, at a record field typed by it, at a tuple position typed by it, and inside an `Option` payload. Record and tuple construction refuse a member holding it with `TypeMismatch`. | Test (TC-913) |
 
 ## Dependencies
 
-- [QSpec FR-208](ix://agent-ix/quire-specification/FR-208) defines the
+- [QSpec FR-208](ix://agent-ix/filament-specification/FR-208) defines the
   record/event specialization semantics whose normalized ancestor keys are
-  supplied by QSL's consumer layer.
-- QSL FR-359 (agent-ix/quire-spec-language, on its integration branch
+  supplied by FSL's consumer layer.
+- FSL FR-359 (agent-ix/filament-spec-language, on its integration branch
   `impl/business-model-meanings`, not yet on its `main`) states the slot, child
   and refusal rules whose admission half this requirement provides
   (cross-repo requirement 1).
-- quire-exact FR-376 to FR-378 define the kernel collection, canonical-key and
+- filament-exact FR-376 to FR-378 define the kernel collection, canonical-key and
   equality behavior for composites of distinct declarations that FR-113-AC-6
   needs.

@@ -3,24 +3,24 @@ id: FR-124
 title: "Hand an exact quantity conversion to the next operation as an identified quantity"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-122
+  - target: ix://agent-ix/filament-semantic-value/FR-122
     type: references
-  - target: ix://agent-ix/quire-semantic-value/FR-060
+  - target: ix://agent-ix/filament-semantic-value/FR-060
     type: references
-  - target: ix://agent-ix/quire-specification/FR-142
+  - target: ix://agent-ix/filament-specification/FR-142
     type: references
-  - target: ix://agent-ix/quire-contract-runtime/FR-275
+  - target: ix://agent-ix/filament-contract-runtime/FR-275
     type: references
-  - target: ix://agent-ix/quire-exact/FR-088
+  - target: ix://agent-ix/filament-exact/FR-088
     type: references
-  - target: ix://agent-ix/quire-specification/TC-187
+  - target: ix://agent-ix/filament-specification/TC-187
     type: references
 ---
 # FR-124: Hand an exact quantity conversion to the next operation as an identified quantity
 
 ## Description
 
-`quire-semantic-value` SHALL turn a completed exact quantity conversion into
+`filament-semantic-value` SHALL turn a completed exact quantity conversion into
 the pair a later quantity operation needs: a kernel `Quantity` and the
 `IdentifiedUnit` that carries the quantity's unit id. `convert_quantity` returns
 a `Conversion` that holds the converted value and a bare `QuantityUnit`. A
@@ -37,7 +37,7 @@ Result<Option<(Quantity, IdentifiedUnit)>, IdentityRefusal>`: the method is
 refusal, not `Ok(None)`.
 
 The types keep their owners. `Quantity` and `UnitId` are kernel values of
-`quire-exact`, one authoritative declaration that this crate constructs and
+`filament-exact`, one authoritative declaration that this crate constructs and
 never redeclares. `QuantityUnit`, `CompoundUnit`, `IdentifiedUnit`,
 `UnitScope` and `Conversion` are this crate's. A consumer such as the runtime
 derives its own representation from the returned pair at its boundary and
@@ -62,7 +62,7 @@ second conversion yields exact `1 J`.
 
 ## Public API inventory
 
-All items are at `quire_semantic_value::quantity`; the method and the refusal
+All items are at `filament_semantic_value::quantity`; the method and the refusal
 type are new and no existing item changes.
 
 ```rust
@@ -93,7 +93,7 @@ pub enum HandoffRefusal {
    quantity of the unit. Exactness is checked first: for such a value the
    target unit's id is never computed, so a decimal or integer conversion into
    a target whose id would be refused is `NotExact`, not `Identity`.
-3. When the conversion's value is exact, QSV SHALL check the structural compound-term
+3. When the conversion's value is exact, FSV SHALL check the structural compound-term
    representation against the existing 16 MiB `identity.input_bytes` ceiling before forming
    `UnitId::Compound`. The check uses bounded RFC 8785 encoding of QSpec FR-201's `UnitId`
    `terms` arm, including each root `NodeId`'s structural components and each exponent's canonical
@@ -116,7 +116,7 @@ pub enum HandoffRefusal {
    remain distinct even though they carry that node as a component.
 7. The method SHALL use only the crate's existing dependencies, call no
    identity-minting method of `NodeKey`, and add no re-export (FR-060).
-8. On QSV's quantity conversion path, a completed conversion into an integer
+8. On FSV's quantity conversion path, a completed conversion into an integer
    target SHALL charge `unit.result-retain` with one value occurrence and one
    result unit, but zero additional work units. `unit.target-domain` has already
    paid the work of admitting the retained integer. Exact rational and decimal
@@ -152,6 +152,6 @@ The existing handoff is implemented (IR-831; RT AD-004 step 4). IR-1142 PR #73
 carries the structural identity resource and cross-arm controls in
 FR-124-AC-4/5; its focused tests pass, with independent review and the final
 gate pending. IR-1149 separately owns the preexisting infallible `Integer`
-clone and decimal formatting in compound identity construction under QSL
+clone and decimal formatting in compound identity construction under FSL
 FR-259 Behavior 6. Updating RT AD-004's proposed `exact_quantity` signature
 to this one is a follow-up under IR-831. The RT cutover follows.

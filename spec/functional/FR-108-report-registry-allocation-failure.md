@@ -9,7 +9,7 @@ relationships: []
 ## Description
 
 When storage for the type-environment registry, an index, or an admission
-traversal cannot be reserved, `quire-semantic-value` SHALL stop admission with
+traversal cannot be reserved, `filament-semantic-value` SHALL stop admission with
 a typed allocation failure that retains the request made at the failing
 reservation boundary. This failure is distinct from an invalid declaration,
 a configured environment limit, and canonical identity-preimage allocation.
@@ -69,20 +69,20 @@ a configured environment limit, and canonical identity-preimage allocation.
 
 ## Dependencies
 
-- [QSL FR-082](ix://agent-ix/quire-spec-language/FR-082) owns the expression
+- [FSL FR-082](ix://agent-ix/filament-spec-language/FR-082) owns the expression
   checker's admission behavior but does not define registry allocation units
   or an outcome for this carrier. QSL-678 owns specification of the caller's
   public resource payload and its criterion and test case. The intended
   downstream outcome is distinct from malformed input, configured-budget
   exhaustion, and cancellation, with no evaluation or evaluation charge
-  before denial. This QSV requirement does not define the QSL result shape.
-- [QSL FR-259](ix://agent-ix/quire-spec-language/FR-259) governs canonical
+  before denial. This FSV requirement does not define the FSL result shape.
+- [FSL FR-259](ix://agent-ix/filament-spec-language/FR-259) governs canonical
   identity-reader and encoder allocation failure. Its `IdentityRefusal`
   mapping does not classify registry storage failure.
-- The QSV admission carrier is limited to type-environment admission storage.
+- The FSV admission carrier is limited to type-environment admission storage.
   It does not revise union shape or member-sealing rules, scalar charge
   points, or the released checked-invariant cause catalog.
-- QSV's current `TypeEnvironment` uses infallible tree insertion and several
+- FSV's current `TypeEnvironment` uses infallible tree insertion and several
   other infallible allocation sites. Those paths require a storage redesign;
   ordinary `BTreeMap`/`BTreeSet` insertion cannot be treated as an observed
   fallible reservation. The redesign must preserve deterministic iteration,

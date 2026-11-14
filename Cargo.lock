@@ -71,6 +71,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "filament-exact"
+version = "0.1.0"
+source = "git+https://github.com/agent-ix/filament-exact?branch=main#98a815d3e759ca8f95df3249138bfb03c6fcb116"
+dependencies = [
+ "allocator-api2",
+ "arrayvec",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "once_cell",
+ "spin",
+ "thiserror",
+ "triomphe",
+ "unicode-normalization",
+]
+
+[[package]]
+name = "filament-semantic-value"
+version = "0.1.0"
+dependencies = [
+ "allocation-counter",
+ "filament-exact",
+ "fsv-failing-allocator",
+ "ix-trace-rs",
+ "quire-canonical",
+ "thiserror",
+]
+
+[[package]]
+name = "fsv-failing-allocator"
+version = "0.0.0"
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -135,10 +168,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "qsv-failing-allocator"
-version = "0.0.0"
-
-[[package]]
 name = "quire-canonical"
 version = "0.3.0"
 source = "git+https://github.com/agent-ix/quire-canonical?branch=main#5dc4e12db63b8fae647825b4e4b78df9b6dcadfe"
@@ -158,35 +187,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "quire-exact"
-version = "0.1.0"
-source = "git+https://github.com/agent-ix/quire-exact?branch=main#bd2991e79bf43ac4ec99db667c42aefcc887d2f4"
-dependencies = [
- "allocator-api2",
- "arrayvec",
- "num-bigint",
- "num-integer",
- "num-traits",
- "once_cell",
- "spin",
- "thiserror",
- "triomphe",
- "unicode-normalization",
-]
-
-[[package]]
-name = "quire-semantic-value"
-version = "0.1.0"
-dependencies = [
- "allocation-counter",
- "ix-trace-rs",
- "qsv-failing-allocator",
- "quire-canonical",
- "quire-exact",
- "thiserror",
 ]
 
 [[package]]

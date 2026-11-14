@@ -7,7 +7,7 @@
 //!
 //! The units are logical helper events, not evaluator charges: a pre-call
 //! stop reports zero evaluation consumption and has no kernel charge point
-//! (FR-277 "Projection into existing QSL carriers"). Membership events are
+//! (FR-277 "Projection into existing FSL carriers"). Membership events are
 //! this crate's (`supplied_membership`); a conversion event is charged by the
 //! crate that converts supplied JSON values into kernel values, to the same
 //! run (FR-098). Each event has exactly one initiating-phase owner.
@@ -15,7 +15,7 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
-use quire_exact::{
+use filament_exact::{
     Cancel, CancelCause, NumericMembershipOperand, NumericTypeEndpoint, Value, ValueType,
 };
 
@@ -71,13 +71,13 @@ impl SuppliedPhase {
 /// "Pre-call result context").
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum SuppliedEvent {
-    /// QSV: one runtime occurrence visit.
+    /// FSV: one runtime occurrence visit.
     ValueVisit,
-    /// QSV: one compared pair of type-chain links.
+    /// FSV: one compared pair of type-chain links.
     TypeComparison,
-    /// QSV: one child scheduling operation.
+    /// FSV: one child scheduling operation.
     ChildScheduling,
-    /// QSV or conversion: one descriptor query.
+    /// FSV or conversion: one descriptor query.
     DescriptorQuery,
     /// Conversion: reading and locally validating one witness node.
     WitnessPreflight,
@@ -175,7 +175,7 @@ pub enum AttemptedCount {
     Overflow,
 }
 
-/// The pre-call limit record (FR-277 "Projection into existing QSL
+/// The pre-call limit record (FR-277 "Projection into existing FSL
 /// carriers"): the numerical meanings of `Incomplete` without a charge point.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SuppliedLimit {
@@ -307,15 +307,15 @@ pub struct SuppliedStorage {
 pub enum SuppliedCause {
     /// A helper or counter ceiling denied the next event.
     Limit(SuppliedLimit),
-    /// The input failed membership; the original refusal and, where QSV
+    /// The input failed membership; the original refusal and, where FSV
     /// reported it, the membership cause.
     Input {
         /// The original input refusal.
         refusal: InputRefusal,
-        /// QSV's membership cause, when membership found the fault.
+        /// FSV's membership cause, when membership found the fault.
         membership: Option<InvalidMembershipCause>,
     },
-    /// The original caller [`quire_exact::Cancel`] stopped the phase.
+    /// The original caller [`filament_exact::Cancel`] stopped the phase.
     Cancelled(CancelCause),
     /// A fallible reservation was denied by the allocator.
     Storage(SuppliedStorage),
@@ -368,7 +368,7 @@ impl SuppliedStop {
 }
 
 /// A supplied-admission walk reached a helper family whose supplied-value
-/// contract QSV has not qualified (IR-714): the walk stopped before that
+/// contract FSV has not qualified (IR-714): the walk stopped before that
 /// helper ran. It is distinct from invalid input, a limit, a cancellation,
 /// storage and capacity, and never a [`SuppliedCause`] arm.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -636,7 +636,7 @@ impl SuppliedRun {
     /// The first stop of this run with its full phase context, whichever
     /// cause: the diagnostic context that accompanies the existing
     /// invalid-input and cancellation failures of the checked call, which
-    /// keep their own arms (FR-277 "Projection into existing QSL carriers").
+    /// keep their own arms (FR-277 "Projection into existing FSL carriers").
     #[must_use]
     pub const fn failure(&self) -> Option<&SuppliedFailure> {
         self.stopped.as_ref()
@@ -677,7 +677,7 @@ impl SuppliedRun {
     }
 
     /// Admit `value` against `expected` for parameter `parameter` under the
-    /// initiating `phase`'s cumulative budget, one QSV supplied-membership
+    /// initiating `phase`'s cumulative budget, one FSV supplied-membership
     /// event at a time.
     ///
     /// # Errors
@@ -846,7 +846,7 @@ impl SuppliedRun {
         }
     }
 
-    /// Charge one QSL-owned conversion event to the conversion budget before
+    /// Charge one FSL-owned conversion event to the conversion budget before
     /// its work, polling the original [`Cancel`].
     ///
     /// # Errors
@@ -859,8 +859,8 @@ impl SuppliedRun {
         event: SuppliedEvent,
         locus: SuppliedLocus,
     ) -> Result<(), Box<SuppliedStop>> {
-        // QSV's budget is the one counter for conversion work. Its event
-        // enum names only QSV's own four events, so a QSL-owned event is
+        // FSV's budget is the one counter for conversion work. Its event
+        // enum names only FSV's own four events, so a FSL-owned event is
         // charged as a value-visit-shaped unit and named back here: the
         // label is never read from the budget's reply.
         let at = MembershipLocus {
@@ -1132,7 +1132,7 @@ mod tests {
         );
     }
 
-    /// FR-126-AC-9: every storage-bearing arm of QSV's bounded
+    /// FR-126-AC-9: every storage-bearing arm of FSV's bounded
     /// admission error maps to its own typed cause: an allocator denial is
     /// `Storage`, a size that cannot be represented is `Capacity`, and neither
     /// is a type refusal or a limit.

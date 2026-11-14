@@ -3,7 +3,7 @@ id: TC-925
 title: "Identity rendering, the state-model prefix and the supplied-value limits"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-126
+  - target: ix://agent-ix/filament-semantic-value/FR-126
     type: verifies
 ---
 # TC-925: Identity rendering, the state-model prefix and the supplied-value limits

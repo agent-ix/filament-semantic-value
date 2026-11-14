@@ -3,14 +3,14 @@ id: TC-912
 title: "Composite supertype admission and bounded ancestry"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-113
+  - target: ix://agent-ix/filament-semantic-value/FR-113
     type: verifies
 ---
 # TC-912: Composite supertype admission and bounded ancestry
 
 ## Description
 
-Verify that the QSV type environment admits record or tuple values through an
+Verify that the FSV type environment admits record or tuple values through an
 acyclic composite-supertype chain without changing their most-specific
 identity, and refuses invalid or over-limit ancestry.
 

@@ -7,8 +7,8 @@
 //! caller; this module holds only what a backend handed admitted keys raises.
 
 use alloc::collections::BTreeSet;
+use filament_exact::Integer;
 use quire_canonical::Limits;
-use quire_exact::Integer;
 
 /// The strict reader's `refused { code: invalid_semantic_graph }`.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, thiserror::Error)]
@@ -95,8 +95,8 @@ pub const IDENTITY_LIMITS: Limits = Limits::new(16_777_216);
 
 /// Why a structural identity's bounded encoding was refused.
 ///
-/// QSL FR-259 Behavior 4: a byte limit reached while encoding is the
-/// calling stage's input-bytes limit (QSL's `identity.input_bytes`), never a
+/// FSL FR-259 Behavior 4: a byte limit reached while encoding is the
+/// calling stage's input-bytes limit (FSL's `identity.input_bytes`), never a
 /// malformed value. Behavior 6: a failed heap reservation is its own
 /// outcome, naming no bound.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, thiserror::Error)]
@@ -141,7 +141,7 @@ mod tests {
 
     use super::*;
 
-    /// QSL FR-259 Behavior 3: the identity encoder's default byte bound is
+    /// FSL FR-259 Behavior 3: the identity encoder's default byte bound is
     /// 16 MiB.
     #[trace("TC-728", "FR-259-AC-2")]
     #[test]

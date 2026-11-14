@@ -8,7 +8,7 @@ relationships: []
 
 ## Description
 
-`quire-semantic-value` SHALL provide an `ObjectClosure` that admits objects over the kernel `ObjectReference`, checked against a `TypeEnvironment`. It SHALL refuse a second object with an admitted identity triple, refuse an object whose type is not a model object type of the environment, refuse an ambiguous `find`, and refuse a present reference, at any depth through Option payloads, composite slots, collection elements and union payloads, that names no closure object and is not a tolerated target. It SHALL record each admitted object type's attribute names in its slot order, find a slot by attribute name, and iterate every admitted object with its named slots. Admitting a snapshot and an invocation, which builds the closure, keeps the id `FR-106` in `agent-ix/quire-spec-language`.
+`filament-semantic-value` SHALL provide an `ObjectClosure` that admits objects over the kernel `ObjectReference`, checked against a `TypeEnvironment`. It SHALL refuse a second object with an admitted identity triple, refuse an object whose type is not a model object type of the environment, refuse an ambiguous `find`, and refuse a present reference, at any depth through Option payloads, composite slots, collection elements and union payloads, that names no closure object and is not a tolerated target. It SHALL record each admitted object type's attribute names in its slot order, find a slot by attribute name, and iterate every admitted object with its named slots. Admitting a snapshot and an invocation, which builds the closure, keeps the id `FR-106` in `agent-ix/filament-spec-language`.
 
 ## Use case
 
@@ -35,4 +35,4 @@ Implemented.
 
 ## Dependencies
 
-- None. The caller's behaviour under the same id lives in `agent-ix/quire-spec-language`.
+- None. The caller's behaviour under the same id lives in `agent-ix/filament-spec-language`.

@@ -3,7 +3,7 @@ id: TC-910
 title: "Native UUID and Timestamp declaration admission and object closure"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-111
+  - target: ix://agent-ix/filament-semantic-value/FR-111
     type: verifies
 ---
 # TC-910: Native UUID and Timestamp declaration admission and object closure
@@ -11,7 +11,7 @@ relationships:
 ## Description
 
 Verify [FR-111](../functional/FR-111-admit-native-uuid-and-timestamp-leaves.md)
-at QSV's type-environment and object-closure boundaries.
+at FSV's type-environment and object-closure boundaries.
 
 Scope: FR-111-AC-1 and FR-111-AC-2.
 

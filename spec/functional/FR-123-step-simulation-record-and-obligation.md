@@ -1,48 +1,48 @@
 ---
 id: FR-123
-title: "Share the per-step simulation record and its obligation across QSL and consumers"
+title: "Share the per-step simulation record and its obligation across FSL and consumers"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-060
+  - target: ix://agent-ix/filament-semantic-value/FR-060
     type: references
-  - target: ix://agent-ix/quire-spec-language/FR-146
+  - target: ix://agent-ix/filament-spec-language/FR-146
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-020
+  - target: ix://agent-ix/filament-spec-language/ADR-020
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-018
+  - target: ix://agent-ix/filament-spec-language/ADR-018
     type: references
-  - target: ix://agent-ix/quire-spec-language/ADR-011
+  - target: ix://agent-ix/filament-spec-language/ADR-011
     type: references
 ---
-# FR-123: Share the per-step simulation record and its obligation across QSL and consumers
+# FR-123: Share the per-step simulation record and its obligation across FSL and consumers
 
 ## Description
 
-`quire-semantic-value` SHALL provide the per-step simulation record of
-[QSL FR-146](ix://agent-ix/quire-spec-language/FR-146) in a public
+`filament-semantic-value` SHALL provide the per-step simulation record of
+[FSL FR-146](ix://agent-ix/filament-spec-language/FR-146) in a public
 `step_simulation` module: `StepSimulationRecord`, `StepObligation` and
-`StepRowRef`. QSL's refinement `requirements` hook writes the records and CG
-reads them, so QSL ADR-018 LA-5 and ADR-011 X-11 place them here, below both,
-with no dependency edge to a QSL layer crate. The crate holds the values and
+`StepRowRef`. FSL's refinement `requirements` hook writes the records and CG
+reads them, so FSL ADR-018 LA-5 and ADR-011 X-11 place them here, below both,
+with no dependency edge to a FSL layer crate. The crate holds the values and
 their canonical encoding; it does not decide which records a refinement
-writes, state what an obligation means, or settle one (QSL FR-146).
+writes, state what an obligation means, or settle one (FSL FR-146).
 
-The refinement and each hypothesis are `quire_exact::NodeKey` values that the
-caller minted; QSV neither mints nor decodes one (FR-060). A `StepRowRef` names
+The refinement and each hypothesis are `filament_exact::NodeKey` values that the
+caller minted; FSV neither mints nor decodes one (FR-060). A `StepRowRef` names
 one step row of the refinement by its zero-based position in the refinement's
 `steps` order, which is declaration order (QSpec FR-375); no sort of any kind
 applies. A refinement has exactly one row per concrete
-step class (QSL ADR-020 RM-5), so a refinement key and a row position name one
-row. The position is a name, not an index QSV dereferences.
+step class (FSL ADR-020 RM-5), so a refinement key and a row position name one
+row. The position is a name, not an index FSV dereferences.
 
 ## Use case
 
-QSL checks `CasRefinesCounter` and writes one `Initial` record and one `Step`
+FSL checks `CasRefinesCounter` and writes one `Initial` record and one `Step`
 record per step row, each listing as hypotheses the invariant clauses whose
 context is an object type of the concrete model. The `Initial` record carries
 the same hypotheses as every `Step` record, as QSpec FR-468 states for the
 initial query. CG reads the same values to route them to the SMT backend, and
-QSL uses their canonical encodings when it keys each `operation-contract`
+FSL uses their canonical encodings when it keys each `operation-contract`
 record by the refinement node and the obligation.
 
 ## Inputs
@@ -58,7 +58,7 @@ record by the refinement node and the obligation.
 
 ## Public API inventory
 
-All items are at `quire_semantic_value::step_simulation`; the module is new and
+All items are at `filament_semantic_value::step_simulation`; the module is new and
 no existing item changes.
 
 ```rust
@@ -93,7 +93,7 @@ identity-bearing values is `Encode` (FR-121).
 ## Behavior
 
 1. Construction SHALL retain the supplied refinement, obligation and
-   hypotheses verbatim. QSV SHALL NOT sort or deduplicate `hypotheses`; QSL
+   hypotheses verbatim. FSV SHALL NOT sort or deduplicate `hypotheses`; FSL
    owns their order.
 2. Equality and `Hash` SHALL be field-wise and agree. `Ord` SHALL be the
    derived field order: `Initial` before every `Step`, steps by row position,
@@ -106,11 +106,11 @@ identity-bearing values is `Encode` (FR-121).
    order), `obligation` and `refinement` (one structural `NodeKey` display
    string) members, in RFC 8785 member order. Each display string is encoded
    as a JSON string, including escaping its path-segment quotes. The structural
-   identity replaces the digest-shaped key from before quire-exact PR #101;
+   identity replaces the digest-shaped key from before filament-exact PR #101;
    this obligation's exact encoding oracle remains. For the
-   TC-922 fixture `NodeKey` with package `qsv-test`, one text path segment
+   TC-922 fixture `NodeKey` with package `fsv-test`, one text path segment
    `00000000000000000000` and ordinal `0`, the display text is
-   `qsv-test:[Text("00000000000000000000")]:0`; the JSON string contains
+   `fsv-test:[Text("00000000000000000000")]:0`; the JSON string contains
    `Text(\"00000000000000000000\")`.
    Each `Encode` SHALL bound the whole output by the caller's `Limits` and
    report an excess through `quire-canonical`'s typed error path.
@@ -137,8 +137,8 @@ FR-123-AC-1 through AC-5. AC-6 is inspected on the implementing diff.
 
 - [FR-060](./FR-060-the-crate-mints-no-identity.md) keeps identity minting in
   the caller.
-- [QSL FR-146](ix://agent-ix/quire-spec-language/FR-146) owns which records a
-  refinement writes and how they settle; QSL ADR-020 RE-2, RS-2 to RS-4 give
-  the obligations their meaning; QSL ADR-018 LA-5 and ADR-011 X-11 place the
+- [FSL FR-146](ix://agent-ix/filament-spec-language/FR-146) owns which records a
+  refinement writes and how they settle; FSL ADR-020 RE-2, RS-2 to RS-4 give
+  the obligations their meaning; FSL ADR-018 LA-5 and ADR-011 X-11 place the
   values here.
-- Blocks QSL-548, which builds the records after the QSL pin moves.
+- Blocks QSL-548, which builds the records after the FSL pin moves.

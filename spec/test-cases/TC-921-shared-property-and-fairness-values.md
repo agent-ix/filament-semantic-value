@@ -3,7 +3,7 @@ id: TC-921
 title: "Shared property and fairness values retain identity, order and encoding"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-121
+  - target: ix://agent-ix/filament-semantic-value/FR-121
     type: verifies
 ---
 # TC-921: Shared property and fairness values retain identity, order and encoding
@@ -11,9 +11,9 @@ relationships:
 ## Description
 
 Verify [FR-121](../functional/FR-121-shared-property-and-fairness-values.md)
-through the public `quire_semantic_value::fairness` API. The tests use two
+through the public `filament_semantic_value::fairness` API. The tests use two
 distinct caller-supplied `EffectiveId` fixtures, including an all-zero digest;
-they do not ask QSV to mint an identity. Steps 1 through 5 are executable
+they do not ask FSV to mint an identity. Steps 1 through 5 are executable
 tests. Step 6 is the implementing PR's API/dependency inspection and build
 gate. The implementing diff supplies five traced tests and the AC-6 inspection.
 

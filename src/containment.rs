@@ -13,7 +13,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use crate::declaration::{Component, ConstructionCause, ConstructionRefusal, TypeEnvironment};
-use quire_exact::{FieldValue, NodeKey, Value, VariantId};
+use filament_exact::{FieldValue, NodeKey, Value, VariantId};
 
 /// A graph-local node name.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

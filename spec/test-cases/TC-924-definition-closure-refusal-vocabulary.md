@@ -3,7 +3,7 @@ id: TC-924
 title: "The definition-closure refusal vocabulary is closed and matches QSpec"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-125
+  - target: ix://agent-ix/filament-semantic-value/FR-125
     type: verifies
 ---
 # TC-924: The definition-closure refusal vocabulary is closed and matches QSpec
@@ -11,7 +11,7 @@ relationships:
 ## Description
 
 Verify [FR-125](../functional/FR-125-definition-closure-refusal-vocabulary.md)
-through the public `quire_semantic_value::definition` API: the spellings, the
+through the public `filament_semantic_value::definition` API: the spellings, the
 pairing with `invalid_package`, the closed cause set and the selection codes.
 
 ## Test Procedure
