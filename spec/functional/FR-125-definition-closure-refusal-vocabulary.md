@@ -19,7 +19,7 @@ no copy of the vocabulary.
 
 QSpec FR-272 ("typed diagnostic cause") is the upstream authority for the
 `invalid_package` spellings and for which cause pairs with which code. QSpec
-`proposals/quire-v1/definitions/value-complete.md` is the upstream authority for
+`proposals/filament-v1/definitions/value-complete.md` is the upstream authority for
 the eight selection codes and their check order. This requirement restates
 the subset that definition-closure admission raises and closes it: the crate
 declares no `invalid_package` cause and no diagnostic code that FR-272 does not
@@ -88,7 +88,7 @@ consumer, not a silent fallthrough.
 
 - QSpec FR-272 (spec/objects/foundation/FR-272-typed-diagnostic-cause.md) owns
   the causes and their pairing with diagnostic codes.
-- QSpec `proposals/quire-v1/definitions/value-complete.md` owns the selection
+- QSpec `proposals/filament-v1/definitions/value-complete.md` owns the selection
   codes and their check order (the lock's `selection_refusal_codes` array in
   `complete-value-lock.json` is sorted alphabetically, not in check order).
 
