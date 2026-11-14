@@ -4,7 +4,7 @@ title: "Relationship extents admit in condition order and read by full reference
 type: TC
 org: agent-ix
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-119
+  - target: ix://agent-ix/filament-semantic-value/FR-119
     type: verifies
 ---
 # TC-919: Relationship extents admit in condition order and read by full reference key
@@ -12,12 +12,12 @@ relationships:
 ## Description
 
 Verify [FR-119](../functional/FR-119-admit-and-read-relationship-extents.md)
-through QSV's public table, extent and `ObjectClosure` APIs, using full
+through FSV's public table, extent and `ObjectClosure` APIs, using full
 references supplied by a model-layer caller. The reservation-denial and
 capacity cases of AC-11 and AC-15 use in-crate unit tests beside the code and
 the existing crate-private reservation seam, as in FR-108/TC-907. Scope:
-FR-119-AC-1 through FR-119-AC-20. This is a planned QSV counterpart of
-[QSL TC-1033](ix://agent-ix/quire-spec-language/TC-1033).
+FR-119-AC-1 through FR-119-AC-20. This is a planned FSV counterpart of
+[FSL TC-1033](ix://agent-ix/filament-spec-language/TC-1033).
 
 ## Test Procedure
 
@@ -35,7 +35,7 @@ FR-119-AC-1 through FR-119-AC-20. This is a planned QSV counterpart of
    second store. Compare every forward and inverse read and complete state.
    Add full references named `p1` in another universe and another type;
    query each as receiver and check that neither aliases `Pump p1`.
-3. Map the fixture's non-navigation `pipe` to a key absent from QSV's table;
+3. Map the fixture's non-navigation `pipe` to a key absent from FSV's table;
    submit it and then an unknown key in separate calls, followed by a duplicate
    composition extent, `t1`-`p1`, `s1`-`t1`, and repeated `s1`-`p1`.
    Inspect exact cause, relationship, zero-based position within each call and
@@ -61,7 +61,7 @@ FR-119-AC-1 through FR-119-AC-20. This is a planned QSV counterpart of
 4. Inspect the public table input and admission path: each end carries only
    type and `unique`, no lower/upper bound or count comparison. Add many targets
    for one source and admit 0, 1 and that large count in separate fixtures,
-   including an empty complete extent. QSL fixture bounds are not passed to QSV. Separately
+   including an empty complete extent. FSL fixture bounds are not passed to FSV. Separately
    admit a listed incomplete extent holding one link and omit housing
    entirely. Compare all three completeness states and their held reads. Assert
    incomplete with instances remains incomplete and that a sibling listed
@@ -106,7 +106,7 @@ FR-119-AC-1 through FR-119-AC-20. This is a planned QSV counterpart of
    reference's exact type and a different population's incomplete entry
    covering its supertype; assert `Undecidable`. Repeat with the incomplete
    supertype as one member of a multi-type entry. Use
-   [QSL FR-082](ix://agent-ix/quire-spec-language/FR-082) conformance through
+   [FSL FR-082](ix://agent-ix/filament-spec-language/FR-082) conformance through
    `TypeEnvironment` to establish both covering relationships, and repeat
    with every covering entry complete to assert `Dangling`.
 6. Yield entries out of population-key order and inspect sorted retained rows.
@@ -162,7 +162,7 @@ FR-119-AC-1 through FR-119-AC-20. This is a planned QSV counterpart of
    to another value; assert `Undecidable` even when its rows would cover a
    missing object. Inspect `resolve` for a shared `'t` and `core::ptr::eq`
    applied only after a missing-object check.
-   Inspect that QSV does not authenticate the closure and manifest's
+   Inspect that FSV does not authenticate the closure and manifest's
    checked-unit/source pairing; a common `TypeEnvironment` alone cannot
    establish that the caller paired the same source.
 7. Inject denial at actual table and extent reservation boundaries; assert
@@ -174,7 +174,7 @@ FR-119-AC-1 through FR-119-AC-20. This is a planned QSV counterpart of
 
 Each isolated defect produces only its distinct typed refusal with exact
 position payload, before later defects; refused input publishes nothing.
-The QSV input has no multiplicity bounds; 0, 1 and many instances admit. A missing end is checked
+The FSV input has no multiplicity bounds; 0, 1 and many instances admit. A missing end is checked
 against its reference type even when no object is held; a conforming missing
 end admits. Reads are pure, total and
 sorted by the whole reference key with repeats preserved. The three extent

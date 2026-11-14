@@ -3,11 +3,11 @@ id: FR-129
 title: "Bound exponent copying and decimal emission in compound unit identity"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-128
+  - target: ix://agent-ix/filament-semantic-value/FR-128
     type: depends_on
-  - target: ix://agent-ix/quire-semantic-value/FR-124
+  - target: ix://agent-ix/filament-semantic-value/FR-124
     type: references
-  - target: ix://agent-ix/quire-spec-language/FR-259
+  - target: ix://agent-ix/filament-spec-language/FR-259
     type: references
 ---
 # FR-129: Bound exponent copying and decimal emission in compound unit identity
@@ -15,12 +15,12 @@ relationships:
 ## Description
 
 When `compound_unit_id` measures and owns an admitted compound unit's ordered
-root terms, `quire-semantic-value` SHALL use `quire-exact`'s fallible `Integer`
+root terms, `filament-semantic-value` SHALL use `filament-exact`'s fallible `Integer`
 copy and bounded canonical decimal emission for every exponent. A failed
 reservation SHALL become `IdentityRefusal::Allocation { requested }`, naming
-the additional bytes of that reservation. This is QSV's consumer obligation at
+the additional bytes of that reservation. This is FSV's consumer obligation at
 the existing [FR-128](./FR-128-consume-structural-identities.md) structural
-identity boundary; [QSL FR-259](ix://agent-ix/quire-spec-language/FR-259)
+identity boundary; [FSL FR-259](ix://agent-ix/filament-spec-language/FR-259)
 governs the upstream encoder's allocation classification.
 
 ## Inputs
@@ -35,12 +35,12 @@ governs the upstream encoder's allocation classification.
 
 ## Behavior
 
-1. When the compound term preimage fits the caller's byte bound, QSV SHALL
+1. When the compound term preimage fits the caller's byte bound, FSV SHALL
    encode each exponent as its exact canonical signed decimal string and
    return a `UnitId::Compound` whose ordered terms and exponents equal the
    inputs. The canonical encoding is only a bounded measurement: its bytes and
    any digest of them SHALL NOT replace the structural id.
-2. If the canonical term preimage exceeds the caller's byte bound, then QSV SHALL
+2. If the canonical term preimage exceeds the caller's byte bound, then FSV SHALL
    return `IdentityRefusal::InputBytes { bound, required }`, where
    `bound` is that limit and `required` is the reached output byte count of
    `quire-canonical` at refusal, including the emitted structural context
@@ -48,15 +48,15 @@ governs the upstream encoder's allocation classification.
    `bound`; it need not equal the length of the complete final preimage when
    the encoder refuses early. No partial id is returned.
 3. If the fallible copy or decimal emission of an exponent cannot reserve
-   storage, then QSV SHALL return `IdentityRefusal::Allocation { requested }`
+   storage, then FSV SHALL return `IdentityRefusal::Allocation { requested }`
    with the additional bytes requested by that failed reservation. It SHALL
    return no id and SHALL NOT classify the failure as `InputBytes` or
    `NonCanonical`.
-4. QSV SHALL use `Integer::try_clone` and
+4. FSV SHALL use `Integer::try_clone` and
    `Integer::try_to_decimal_string` at this boundary. It SHALL NOT use
    `Integer::clone` or `Integer::to_string` for these two operations, or add a
    second integer implementation.
-5. For controlled verification, QSV SHALL put exponent copying, decimal
+5. For controlled verification, FSV SHALL put exponent copying, decimal
    emission, their error projections, and structural-id construction in one
    private core parameterized by the two fallible call sites. The public
    `compound_unit_id` SHALL delegate to that core with the real
@@ -77,16 +77,16 @@ governs the upstream encoder's allocation classification.
 
 ## Dependencies
 
-- [FR-128](./FR-128-consume-structural-identities.md) owns QSV's structural
+- [FR-128](./FR-128-consume-structural-identities.md) owns FSV's structural
   unit identity; [FR-124](./FR-124-identified-quantity-from-an-exact-conversion.md)
   propagates its refusal through the exact quantity handoff.
-- `quire-exact` supplies fallible `Integer::try_clone` and bounded
+- `filament-exact` supplies fallible `Integer::try_clone` and bounded
   `Integer::try_to_decimal_string`. Its
-  [FR-390](ix://agent-ix/quire-exact/FR-390) AC-1/4 injected-denial test
+  [FR-390](ix://agent-ix/filament-exact/FR-390) AC-1/4 injected-denial test
   establishes the requested-byte provenance for both APIs.
   `quire-canonical` owns RFC 8785 encoding and the caller's byte limit.
 
 ## Status
 
-Planned under IR-1149. The exact kernel APIs are merged in quire-exact #109;
-QSV's consumer path remains to be implemented.
+Planned under IR-1149. The exact kernel APIs are merged in filament-exact #109;
+FSV's consumer path remains to be implemented.

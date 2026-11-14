@@ -4,23 +4,23 @@
 
 mod common;
 
-use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     CollectionKind, CollectionType, FieldValue, FloatType, Identifier, IeeeWidth, IllTypedCause,
     Integer, Meter, NodeKey, ObjectId, ObjectReference, OptionValue, Outcome, Presence,
     ScalarLimits, UnionMember, UnionValue, Value, ValueType, VariantId,
 };
-use quire_semantic_value::declaration::{
+use filament_semantic_value::declaration::{
     CompositeDeclaration, CompositeShape, DeclarationCause, EnvironmentFailure, EqualityOperand,
     EqualityOperator, FieldDeclaration, ObjectTypeDeclaration, RecursionEdges, StorageRequest,
     StorageUnit, TypeEnvironment, UnionMemberDeclaration,
 };
-use quire_semantic_value::enumeration::EnumMemberIndex;
-use quire_semantic_value::object_closure::{ObjectClosure, ObjectClosureCause};
-use quire_semantic_value::supplied_membership::{
+use filament_semantic_value::enumeration::EnumMemberIndex;
+use filament_semantic_value::object_closure::{ObjectClosure, ObjectClosureCause};
+use filament_semantic_value::supplied_membership::{
     InvalidMembershipCause, MembershipEvent, MembershipLocus, MembershipPart, MembershipPathArena,
     PathStep, SuppliedAdmissionError, SuppliedMembershipBudget,
 };
+use ix_trace_rs::trace;
 
 #[allow(
     clippy::disallowed_methods,
@@ -148,7 +148,7 @@ fn sealed_union_final_key_never_admits_a_record_or_tuple_carrier() {
     for declaration in [key(1), key(40)] {
         for slots in [vec![], vec![FieldValue::Present(integer(1))]] {
             let carrier =
-                quire_exact::from_admitted_slots(declaration.clone(), slots.into_boxed_slice());
+                filament_exact::from_admitted_slots(declaration.clone(), slots.into_boxed_slice());
             for ty in [key(1), key(40)] {
                 assert!(!env
                     .admits(&ValueType::Composite(ty.clone()), &carrier)
@@ -218,7 +218,7 @@ fn sealed_union_payload_uses_one_rooted_supplied_budget() {
         .unwrap();
     let value = UnionValue::from_admitted(binding(key(40), "Rect"), vec![integer(2), integer(3)]);
     let expected = ValueType::Composite(key(1));
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     for ceiling in [0, 5, 6] {
         let mut arena = MembershipPathArena::new().unwrap();
         let at = MembershipLocus {
@@ -279,7 +279,7 @@ fn public_supplied_reservation_denial_retains_request_and_locus() {
         .unwrap();
     let value = UnionValue::from_admitted(binding(key(40), "Rect"), vec![integer(2), integer(3)]);
     let expected = ValueType::Composite(key(1));
-    let cancel = quire_exact::Cancel::new();
+    let cancel = filament_exact::Cancel::new();
     let mut arena = MembershipPathArena::new().unwrap();
     let at = MembershipLocus {
         path: arena.root(7),
@@ -391,7 +391,7 @@ fn invalid_union_member_and_payload_keep_distinct_rooted_causes() {
             &mut arena,
             at,
             &mut budget,
-            &quire_exact::Cancel::new(),
+            &filament_exact::Cancel::new(),
         );
         let Err(SuppliedAdmissionError::Invalid { cause, locus }) = result else {
             panic!("expected typed union refusal: {result:?}");
@@ -525,7 +525,7 @@ fn ieee_and_named_escape_checks_run_before_any_binding_exists() {
     ));
     assert_eq!(
         env.try_check_type(&set).unwrap_err(),
-        quire_semantic_value::declaration::TypeCheckError::Refused(quire_exact::IllTyped {
+        filament_semantic_value::declaration::TypeCheckError::Refused(filament_exact::IllTyped {
             cause: IllTypedCause::OperatorIneligible
         })
     );
@@ -636,7 +636,7 @@ fn recursive_handle_final_key_joins_admit_payloads_and_checked_equality() {
         Some(ValueType::collection(actual_collection.clone()))
     );
     let contained = OptionValue::present(ValueType::Composite(key(40)), value.clone()).unwrap();
-    let collection = quire_exact::from_admitted(actual_collection, vec![contained]);
+    let collection = filament_exact::from_admitted(actual_collection, vec![contained]);
     assert!(env.admits(&expected_collection, &collection).unwrap());
     let wrong = UnionValue::from_admitted(
         binding(key(1), "Next"),
@@ -674,7 +674,7 @@ fn ten_thousand_supplied_links_follow_sealed_keys_with_internal_position_types()
                 Outcome::Completed(true)
             ));
             assert_eq!(
-                quire_exact::compare_keys(&left, &right),
+                filament_exact::compare_keys(&left, &right),
                 Some(std::cmp::Ordering::Equal)
             );
         })
@@ -769,7 +769,7 @@ fn sealed_tree_10k_budgeted_admission_spends_exact_n_on_small_stack() {
                 &mut arena,
                 at,
                 &mut budget,
-                &quire_exact::Cancel::new(),
+                &filament_exact::Cancel::new(),
             );
             assert_eq!(result, Ok(()));
             assert_eq!(budget.spent(), TREE_EVENT_COUNT);
@@ -800,7 +800,7 @@ fn sealed_tree_10k_budgeted_admission_denies_last_event_on_small_stack() {
                 &mut arena,
                 at,
                 &mut budget,
-                &quire_exact::Cancel::new(),
+                &filament_exact::Cancel::new(),
             );
             let Err(SuppliedAdmissionError::Limit {
                 ceiling,

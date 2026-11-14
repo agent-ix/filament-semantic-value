@@ -3,7 +3,7 @@ id: TC-907
 title: "Type-environment storage denial retains its measured request"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-108
+  - target: ix://agent-ix/filament-semantic-value/FR-108
     type: verifies
 ---
 # TC-907: Type-environment storage denial retains its measured request
@@ -50,6 +50,6 @@ that can reach the new failure uses the carrier.
 
 ## Status
 
-Planned for the IR-713 implementation. QSL's consumer test and criterion are
-owned in `agent-ix/quire-spec-language` under FR-082; this QSV test case does
-not claim to verify QSL evaluation or charge behavior.
+Planned for the IR-713 implementation. FSL's consumer test and criterion are
+owned in `agent-ix/filament-spec-language` under FR-082; this FSV test case does
+not claim to verify FSL evaluation or charge behavior.

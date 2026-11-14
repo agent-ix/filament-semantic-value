@@ -3,14 +3,14 @@ id: TC-913
 title: "Nested composite conformance admission"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-113
+  - target: ix://agent-ix/filament-semantic-value/FR-113
     type: verifies
 ---
 # TC-913: Nested composite conformance admission
 
 ## Description
 
-Verify that the QSV type environment and equality operand check admit a
+Verify that the FSV type environment and equality operand check admit a
 composite value by conformance at every nested depth, without covariance over
 type constructors, and refuse nonconforming values with typed causes.
 
@@ -38,7 +38,7 @@ type constructors, and refuse nonconforming values with typed causes.
 5. Query `admits` for an `Option<Reference<T>>` and a `Sequence<Reference<T>>`
    holding a reference whose object type is a subtype of `T`, one of `T`, an
    unrelated object type, and (at a subtype slot) a supertype object.
-6. After quire-exact FR-376 to FR-378 land, build a `Set<P>` and a `Bag<P>`
+6. After filament-exact FR-376 to FR-378 land, build a `Set<P>` and a `Bag<P>`
    holding a `C` and a `P` of equal shared fields and admit them.
 7. Build a union value carrying a record's key and a union value carrying a tuple's key. Query `admits` at each composite type and at `Option` of it, then construct a record with a field typed by the record and a tuple with a position typed by the tuple holding it.
 

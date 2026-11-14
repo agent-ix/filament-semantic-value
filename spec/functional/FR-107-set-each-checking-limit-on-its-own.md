@@ -8,11 +8,11 @@ relationships: []
 
 ## Description
 
-`CheckingLimits` SHALL give each of its three ceilings (`nodes`, `input_bytes`, `work_budget`) a consuming builder that sets that ceiling and keeps the other two. A caller changes one checking limit without restating the others. QSL names the node ceiling `s3.nodes`.
+`CheckingLimits` SHALL give each of its three ceilings (`nodes`, `input_bytes`, `work_budget`) a consuming builder that sets that ceiling and keeps the other two. A caller changes one checking limit without restating the others. FSL names the node ceiling `s3.nodes`.
 
 ## Use case
 
-A driver sets the node ceiling (QSL's `s3.nodes`) alone from a request and keeps the published defaults for the other checking limits.
+A driver sets the node ceiling (FSL's `s3.nodes`) alone from a request and keeps the published defaults for the other checking limits.
 
 ## Behavior
 

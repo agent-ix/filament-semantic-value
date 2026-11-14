@@ -3,9 +3,9 @@ id: FR-132
 title: "Check external types with fallible storage"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-108
+  - target: ix://agent-ix/filament-semantic-value/FR-108
     type: references
-  - target: ix://agent-ix/quire-semantic-value/FR-115
+  - target: ix://agent-ix/filament-semantic-value/FR-115
     type: references
 ---
 # FR-132: Check external types with fallible storage
@@ -13,7 +13,7 @@ relationships:
 ## Description
 
 When a caller checks an external parameter or result `ValueType` against an
-admitted `TypeEnvironment`, QSV SHALL expose `try_check_type` with fallible
+admitted `TypeEnvironment`, FSV SHALL expose `try_check_type` with fallible
 storage throughout its traversal, including nested IEEE-content discovery.
 The public result SHALL distinguish semantic refusal from allocation denial
 and reservation capacity overflow without retaining partial checking state.
@@ -31,22 +31,22 @@ and reservation capacity overflow without retaining partial checking state.
 
 ## Behavior
 
-1. QSV SHALL replace the public `check_type` entry point with
+1. FSV SHALL replace the public `check_type` entry point with
    `try_check_type` and switch its in-repository callers to the fallible
-   result. QSV SHALL expose no infallible compatibility wrapper for this
+   result. FSV SHALL expose no infallible compatibility wrapper for this
    external-type check.
-2. When the public check requires storage on its reachable path, QSV SHALL
+2. When the public check requires storage on its reachable path, FSV SHALL
    use `try_reserve` or `try_reserve_exact` with checked reservation sizing
    before allocating. This includes the root worklist, later worklist growth, and visited
    composite storage used by nested IEEE discovery. Error construction SHALL
    require no further allocation.
-3. If an allocator denies a representable reservation, then QSV SHALL return
+3. If an allocator denies a representable reservation, then FSV SHALL return
    `TypeCheckError::Allocation` retaining the actual additional-element or
    byte request and its native unit. If reservation sizing overflows, then
-   QSV SHALL return `TypeCheckError::Capacity` with that request instead.
+   FSV SHALL return `TypeCheckError::Capacity` with that request instead.
    Neither failure SHALL become an `IllTyped`, declaration refusal, limit,
    cancellation, or canonical identity refusal.
-4. When reservations succeed, QSV SHALL preserve the external-type check's
+4. When reservations succeed, FSV SHALL preserve the external-type check's
    existing traversal and semantic results: admitted composite keys and
    sealed union handles resolve; unknown composites and non-object reference
    targets yield `TypeMismatch`; populations and non-sequence collections
@@ -54,7 +54,7 @@ and reservation capacity overflow without retaining partial checking state.
    collection elements and map values retain their existing traversal.
    Enum scope remains the caller's responsibility. Nested IEEE discovery
    SHALL preserve its existing record, tuple, union-member and cycle behavior.
-5. When the check returns success, semantic refusal, or storage failure, QSV SHALL
+5. When the check returns success, semantic refusal, or storage failure, FSV SHALL
    leave the environment and supplied type unchanged and retain no traversal state.
    A retry after removing a denial SHALL produce the same result as a fresh
    successful-reservation attempt.

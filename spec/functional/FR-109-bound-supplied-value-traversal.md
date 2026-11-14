@@ -9,7 +9,7 @@ relationships: []
 ## Description
 
 When a caller checks a supplied runtime value against its expected type,
-`quire-semantic-value` SHALL use a caller-owned cumulative supplied-membership
+`filament-semantic-value` SHALL use a caller-owned cumulative supplied-membership
 budget and return a typed admission-phase result, distinct from authored
 declaration admission and semantic evaluation.
 
@@ -71,7 +71,7 @@ declaration admission and semantic evaluation.
    conversion-triggered operation SHALL consume the conversion owner's
    budget once. Passing through the helper SHALL NOT debit both. Replay's final
    supplied-membership check SHALL use the same admission budget as its other
-   admission checks. QSL owns conversion-node accounting, phase ceilings and
+   admission checks. FSL owns conversion-node accounting, phase ceilings and
    consumer projection.
 7. A traversal-limit failure SHALL preserve typed supplied-admission phase,
    configured ceiling, successful cumulative spend, next requested amount and
@@ -111,8 +111,8 @@ caller/admission input bound and the helper operation it constrains.
 | Enum member | Ranked lookup scans at most E retained variants and compares fixed-size variant identities. | Establish E from the admitted shape; a cache hit retains the logical query event. Poll around the bounded helper. |
 | Nested retained type | At most T type-chain link comparisons; leaf comparisons include any input-sized retained enum/numeric data. | Charge type links through the bounded interface; bound leaf data separately. No outer one-event substitution for an entire unbounded type chain. |
 | Reference conformance | The retained ancestry path uses registry lookups and a binary search over at most A ancestor positions; registry size is R. | Establish finite lookup-comparison bounds from the authoritative container implementation and actual admitted R/A. Poll around each bounded helper. A nominal query does not prove internal cost or cancellation latency. |
-| Decimal domain | The authoritative `DecimalType::try_contains` helper borrows the normalized coefficient `c` and interval endpoints `lo,hi`. On a scale-admissible path, let `b = max(bits(c), bits(lo), bits(hi))`, counting zero as one bit, and let `k` be the actual nonnegative coefficient-alignment shift. The caller SHALL establish admitted `B >= b` and `S >= k` before invoking it. With `L_B = ceil(B / 32)`, [exact-kernel FR-372](ix://agent-ix/quire-exact/FR-372) bounds the two endpoint comparisons by `2 × (min(S,B) + 2) × L_B` limb steps and one live fallible scratch request of at most `4 × L_B` bytes. A scale refusal completes without scratch. | The helper polls the original cancellation handle before allocation, after successful allocation, before each limb step and before completion; allocation/release are indivisible calls with no wall-clock guarantee. Checked layout capacity, actual scratch-allocation denial and cancellation retain distinct typed causes. The QSV caller SHALL preserve those causes and the supplied-admission locus, with no additional logical event or evaluator debit. The caller SHALL NOT infer `B` or `S` from a default or substitute a smaller bound for `c`, either endpoint or the actual shift. |
-| Sealed union payload/descriptor | The public union declaration/member shape and supplied walk are implemented. The retained member position count bounds payload visits and worklist scheduling. A finite descriptor-lookup cost bound is not yet established: the shape, final-key and member ordered-index lookups and `UnionMember` equality over the member identifier still need inspection against admitted registry and identifier bounds. | Poll at the descriptor event and after the lookup; reserve worklist capacity before scheduling payloads. The 10,000-link Tree N/N-1 test verifies logical event accounting, not the remaining helper premises or QSL consumer limits. |
+| Decimal domain | The authoritative `DecimalType::try_contains` helper borrows the normalized coefficient `c` and interval endpoints `lo,hi`. On a scale-admissible path, let `b = max(bits(c), bits(lo), bits(hi))`, counting zero as one bit, and let `k` be the actual nonnegative coefficient-alignment shift. The caller SHALL establish admitted `B >= b` and `S >= k` before invoking it. With `L_B = ceil(B / 32)`, [exact-kernel FR-372](ix://agent-ix/filament-exact/FR-372) bounds the two endpoint comparisons by `2 × (min(S,B) + 2) × L_B` limb steps and one live fallible scratch request of at most `4 × L_B` bytes. A scale refusal completes without scratch. | The helper polls the original cancellation handle before allocation, after successful allocation, before each limb step and before completion; allocation/release are indivisible calls with no wall-clock guarantee. Checked layout capacity, actual scratch-allocation denial and cancellation retain distinct typed causes. The FSV caller SHALL preserve those causes and the supplied-admission locus, with no additional logical event or evaluator debit. The caller SHALL NOT infer `B` or `S` from a default or substitute a smaller bound for `c`, either endpoint or the actual shift. |
+| Sealed union payload/descriptor | The public union declaration/member shape and supplied walk are implemented. The retained member position count bounds payload visits and worklist scheduling. A finite descriptor-lookup cost bound is not yet established: the shape, final-key and member ordered-index lookups and `UnionMember` equality over the member identifier still need inspection against admitted registry and identifier bounds. | Poll at the descriptor event and after the lookup; reserve worklist capacity before scheduling payloads. The 10,000-link Tree N/N-1 test verifies logical event accounting, not the remaining helper premises or FSL consumer limits. |
 
 ## Acceptance Criteria
 
@@ -125,7 +125,7 @@ caller/admission input bound and the helper operation it constrains.
 | FR-109-AC-5 | An actual fallible supplied-worklist reservation denial reports its measured request and native unit; checked-size overflow has its own classification. Neither becomes a traversal limit, declaration-storage failure or invalid value. Retry after removing the denial yields the same membership outcome. | Test |
 | FR-109-AC-6 | The supplied-membership path in `src/supplied_membership.rs` charges each reachable logical event once to the caller's cumulative supplied-admission budget and passes the original budget and cancellation handle through shared helpers. It neither debits a conversion budget nor constructs an evaluation meter or evaluated `FunctionCall` result. A denied event retains the successful supplied spend and its typed admission locus. | Test |
 | FR-109-AC-7 | Each claimed supported helper path has a source-backed input bound, finite comparison/arithmetic and temporary-storage bound, cancellation response boundary and fallible storage route where needed. Decimal caller qualification establishes admitted `B >= max(bits(c), bits(lo), bits(hi))` and `S >=` the actual alignment shift and uses the authoritative fallible kernel helper; the implemented union path still requires inspection of its helper premises. Logical-event totals alone do not establish helper premises. | Inspection |
-| FR-109-AC-8 | An integrated Decimal membership call at its owning value-visit event preserves one cumulative supplied budget and original cancellation handle. With source-backed `B,S`, reachable inclusive membership, nonmembership, N/N-1 and cancellation retain the owning phase/locus without a fifth helper event, per-limb debit or partial admission. A separate QSV projection test passes constructed typed kernel capacity and allocation failures through the same production error mapping and checks their distinct supplied-admission causes and rooted locus; actual kernel failure mechanisms are verified by exact-kernel TC-920, not claimed reachable through the public QSV call. A caller lacking either admitted bound does not claim Decimal support or choose a numeric default. | Test |
+| FR-109-AC-8 | An integrated Decimal membership call at its owning value-visit event preserves one cumulative supplied budget and original cancellation handle. With source-backed `B,S`, reachable inclusive membership, nonmembership, N/N-1 and cancellation retain the owning phase/locus without a fifth helper event, per-limb debit or partial admission. A separate FSV projection test passes constructed typed kernel capacity and allocation failures through the same production error mapping and checks their distinct supplied-admission causes and rooted locus; actual kernel failure mechanisms are verified by exact-kernel TC-920, not claimed reachable through the public FSV call. A caller lacking either admitted bound does not claim Decimal support or choose a numeric default. | Test |
 | FR-109-AC-9 | At the process arena-ID boundary, the last issuable identifier creates one ordinary arena and the next and later requests return the same one-unit `ArenaIdentifiers` capacity error without reusing an ID. The supplied-run constructor maps that error to admission phase with zero consumed work and no parameter, event or locus; no run, arena or token escapes. An internal counter-controlled test exercises the production construction and mapping paths without mutating the process counter or claiming a public exhaustion trigger. | Test |
 
 ## Dependencies
@@ -133,26 +133,26 @@ caller/admission input bound and the helper operation it constrains.
 - [FR-108](./FR-108-report-registry-allocation-failure.md) owns authored
   declaration/registry storage failure. This supplied-runtime carrier does not
   revise that requirement or its implementation.
-- [QSL FR-321](ix://agent-ix/quire-spec-language/FR-321) owns public supplied
-  union admission; [QSL FR-322](ix://agent-ix/quire-spec-language/FR-322) owns
+- [FSL FR-321](ix://agent-ix/filament-spec-language/FR-321) owns public supplied
+  union admission; [FSL FR-322](ix://agent-ix/filament-spec-language/FR-322) owns
   semantic evaluation. The event/API contract must align with QSL-681 before
   consumer implementation; evaluation's existing charge schedule is unchanged.
-- [QSL FR-098](ix://agent-ix/quire-spec-language/FR-098) retains ownership of
+- [FSL FR-098](ix://agent-ix/filament-spec-language/FR-098) retains ownership of
   per-argument converted-node and occurrence bounds, without evaluator debit.
   This requirement does not reinterpret converted nodes as membership events.
-- [QSL FR-486](ix://agent-ix/quire-spec-language/FR-486) owns the evaluator
+- [FSL FR-486](ix://agent-ix/filament-spec-language/FR-486) owns the evaluator
   meter and charge-sequence control, conversion phase allocation, and
-  `FunctionCall` projection formerly combined in FR-109-AC-6. Its FR-486-AC-5 also carries the evaluator-charge clause removed from FR-109-AC-8; QSV retains the supplied-budget and typed-projection portions.
-- QSL owns `supplied.admission_work_units`,
+  `FunctionCall` projection formerly combined in FR-109-AC-6. Its FR-486-AC-5 also carries the evaluator-charge clause removed from FR-109-AC-8; FSV retains the supplied-budget and typed-projection portions.
+- FSL owns `supplied.admission_work_units`,
   `supplied.conversion_work_units`, defaults and public typed phase projection.
   The authoritative runtime request/result envelope is owned by
-  [QSpec FR-323](ix://agent-ix/quire-specification/FR-323). QSL owns consumer
+  [QSpec FR-323](ix://agent-ix/filament-specification/FR-323). FSL owns consumer
   projection and QSL-675 sequencing. Any needed phase-carrier amendment
   remains pending; no wire/transport declaration is created here.
-- QSV's existing `TypeEnvironment::admits` is bool-only; its authored-declaration
+- FSV's existing `TypeEnvironment::admits` is bool-only; its authored-declaration
   work budget is distinct from the supplied traversal contract. The exact-kernel
-  [FR-372](ix://agent-ix/quire-exact/FR-372) fallible Decimal helper is available;
-  IR-719 delivered the QSV bounded Decimal caller with an explicit magnitude
+  [FR-372](ix://agent-ix/filament-exact/FR-372) fallible Decimal helper is available;
+  IR-719 delivered the FSV bounded Decimal caller with an explicit magnitude
   bound, a declared-minimum-scale-derived alignment bound, typed cause/locus
   projection and integrated controls. The caller introduces no fifth
   helper-entry event or numeric default. The public union declaration/member
@@ -164,8 +164,8 @@ caller/admission input bound and the helper operation it constrains.
 
 ## Status
 
-SPEC DRAFT; the fallible exact-kernel Decimal helper and QSV bounded-numeric
-supplied-admission caller are implemented. Non-ignored QSV tests traced to
+SPEC DRAFT; the fallible exact-kernel Decimal helper and FSV bounded-numeric
+supplied-admission caller are implemented. Non-ignored FSV tests traced to
 FR-109-AC-1 through FR-109-AC-5 execute in the default run;
 `supplied_path_arena_growth_probe_10k` is an ignored resource probe outside
 that run. The integrated Decimal controls traced to
@@ -173,12 +173,12 @@ FR-109-AC-8 for cumulative N/N-1 and zero budgets, membership and size
 outcomes, cancellation and typed resource-error projection also execute. Exact-kernel
 TC-920 owns the actual scratch-denial and checked-capacity mechanisms. The
 union descriptor helper premises still need inspection under FR-109-AC-7.
-FR-109-AC-6 is PLANNED for a direct QSV test of the newly narrowed supplied-caller contract; no existing tag is credited to that complete criterion. No numerical default is selected by this QSV requirement. Research predictions
+FR-109-AC-6 is PLANNED for a direct FSV test of the newly narrowed supplied-caller contract; no existing tag is credited to that complete criterion. No numerical default is selected by this FSV requirement. Research predictions
 are not qualified defaults, event-table evidence or runtime acceptance results.
-FR-109-AC-9 has QSV-internal constructor and mapping controls in
+FR-109-AC-9 has FSV-internal constructor and mapping controls in
 `src/supplied_membership.rs` and `src/supplied_stop.rs`. They use a private
 counter to exercise the final issuable ID, repeated capacity failure, scoped
 token separation and the admission-phase supplied-run stop without changing
 the process counter. Exhaustion still requires that process-local counter to
-reach its limit; no public injection seam or downstream QSL→IR→RT trigger is
+reach its limit; no public injection seam or downstream FSL→IR→RT trigger is
 claimed.

@@ -1,6 +1,6 @@
-# quire-semantic-value
+# filament-semantic-value
 
-The shared no_std semantic-value leaf: runtime semantic values over the quire-exact kernel.
+The shared no_std semantic-value leaf: runtime semantic values over the filament-exact kernel.
 
 ## Commands
 

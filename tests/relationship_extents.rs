@@ -3,23 +3,25 @@
 
 mod common;
 
-use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     EffectiveId, FieldValue, FloatType, IeeeValue, IeeeWidth, ObjectId, ObjectReference, Presence,
     Value, ValueType,
 };
-use quire_semantic_value::declaration::{FieldDeclaration, ObjectTypeDeclaration, TypeEnvironment};
-use quire_semantic_value::object_closure::ObjectClosure;
-use quire_semantic_value::relationship_extent::{
+use filament_semantic_value::declaration::{
+    FieldDeclaration, ObjectTypeDeclaration, TypeEnvironment,
+};
+use filament_semantic_value::object_closure::ObjectClosure;
+use filament_semantic_value::relationship_extent::{
     ClosedPopulationManifest, EndSide, ExtentRefusal, ExtentState, ManifestFailure,
     ManifestOutcome, ManifestState, NavigationRelationship, NavigationRelationshipTable,
     PopulationEntry, PopulationEntryFailure, PopulationEnumerator, RelationshipEnd,
     RelationshipExtent, RelationshipExtentStore, Resolution, StopReason, TableRefusal,
 };
+use ix_trace_rs::trace;
 
 #[allow(
     clippy::disallowed_methods,
-    reason = "fixture supplies identities; QSV mints none"
+    reason = "fixture supplies identities; FSV mints none"
 )]
 fn ty(byte: u8) -> EffectiveId {
     common::effective(u64::from(byte))

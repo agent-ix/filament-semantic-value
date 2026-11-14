@@ -3,11 +3,11 @@ id: FR-115
 title: "Resolve union topology before verified identity sealing"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-108
+  - target: ix://agent-ix/filament-semantic-value/FR-108
     type: depends_on
-  - target: ix://agent-ix/quire-specification/FR-143
+  - target: ix://agent-ix/filament-specification/FR-143
     type: depends_on
-  - target: ix://agent-ix/quire-specification/FR-441
+  - target: ix://agent-ix/filament-specification/FR-441
     type: depends_on
 ---
 # FR-115: Resolve union topology before verified identity sealing

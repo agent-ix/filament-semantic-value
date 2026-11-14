@@ -1,16 +1,16 @@
-# quire-semantic-value
+# filament-semantic-value
 
 [![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/k8DVhuYBR2)
-[![Quire](https://img.shields.io/badge/Quire-Specification%20Language-1F6FEB)](https://github.com/agent-ix/quire-spec-language)
+[![Filament](https://img.shields.io/badge/Filament-Specification%20Language-1F6FEB)](https://github.com/agent-ix/filament-spec-language)
 
-quire-semantic-value is a `no_std` Rust library of runtime values for the
-Quire stack: quantities with units, enumeration members, records, tuples and
+filament-semantic-value is a `no_std` Rust library of runtime values for the
+Filament stack: quantities with units, enumeration members, records, tuples and
 unions checked against their declared shape, object references, and the
 records of what an operation dropped and where. It builds on the exact-value
-kernel in [quire-exact](https://github.com/agent-ix/quire-exact) and uses only
+kernel in [filament-exact](https://github.com/agent-ix/filament-exact) and uses only
 `core` and `alloc`.
 
-The QSL evaluator, the compiler and the code-generating backends share these
+The FSL evaluator, the compiler and the code-generating backends share these
 values, including the result of an operation that produces no value.
 
 <picture>
@@ -86,18 +86,18 @@ more storage; it cannot provide a declaration result or inject an
 | `stop`, `loss`, `location` | how a computation ends, what it dropped, and where |
 | `call`, `checking`, `definition`, `semantic_node` | refusal vocabularies and admission limits that callers and backends share |
 
-## Quire ecosystem
+## Filament ecosystem
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/ecosystem-dark.svg">
-  <img alt="The Quire repositories. The main chain runs from the standard, quire-specification, to the compiler, quire-spec-language, then quire-contract-ir, quire-contract-codegen and quire-contract-runtime. quire-spec-language also feeds quire-protocol, and quire-contract-ir feeds quire-analyze. quire-observation feeds quire-protocol and quire-mltl. Above the chain, quire-driver runs it, quire-integration tests it and quire-verification plans verification. Below it, shared libraries used throughout: quire-eval, quire-exact, quire-semantic-value, quire-walk, quire-canonical and quire-verification-contracts." src="docs/images/ecosystem-light.svg">
+  <img alt="The Filament repositories. The main chain runs from the standard, filament-specification, to the compiler, filament-spec-language, then filament-contract-ir, filament-contract-codegen and filament-contract-runtime. filament-spec-language also feeds filament-protocol, and filament-contract-ir feeds filament-analyze. filament-observation feeds filament-protocol and filament-mltl. Above the chain, filament-driver runs it, filament-integration tests it and filament-verification plans verification. Below it, shared libraries used throughout: filament-eval, filament-exact, filament-semantic-value, filament-walk, quire-canonical and filament-verification-contracts." src="docs/images/ecosystem-light.svg">
 </picture>
 
 This crate depends on
-[quire-exact](https://github.com/agent-ix/quire-exact) for the exact values and
+[filament-exact](https://github.com/agent-ix/filament-exact) for the exact values and
 meter, and on [quire-canonical](https://github.com/agent-ix/quire-canonical)
 for the one RFC 8785 encoder (without `std`). It is used by
-[quire-spec-language](https://github.com/agent-ix/quire-spec-language), whose
+[filament-spec-language](https://github.com/agent-ix/filament-spec-language), whose
 evaluator and checker share these values.
 
 ## Building and testing
@@ -116,7 +116,7 @@ forbids `unsafe` code.
 `spec/` holds the requirements this crate owns directly: the admission and
 dangling-reference rules of the object closure, and the rule that the crate
 mints no node, effective or population identity. The requirements for the other
-modules are owned by quire-spec-language and [quire-specification](https://github.com/agent-ix/quire-specification), and
+modules are owned by filament-spec-language and [filament-specification](https://github.com/agent-ix/filament-specification), and
 moving them here is remaining work.
 
 ## Contributing

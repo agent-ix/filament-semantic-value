@@ -14,7 +14,7 @@
 use alloc::vec::Vec;
 use core::cell::Cell;
 
-use quire_exact::{
+use filament_exact::{
     Cancel, DecimalMembershipFailure, NumericMembershipFailure, NumericTypeEqualityFailure,
     QuantityCarrier, Value, ValueType,
 };
@@ -190,8 +190,8 @@ fn leaf_cause(expected: &ValueType, value: &Value) -> InvalidMembershipCause {
 /// the carrier's rounding mode applies when producing values, not when
 /// admitting a retained `Value::Quantity`.
 fn carried_quantity_admits(
-    carried: &quire_exact::CarriedQuantityType,
-    quantity: &quire_exact::Quantity,
+    carried: &filament_exact::CarriedQuantityType,
+    quantity: &filament_exact::Quantity,
 ) -> bool {
     if quantity.unit() != carried.unit() {
         return false;
@@ -201,12 +201,12 @@ fn carried_quantity_admits(
             quantity.magnitude().is_integer() && domain.contains(quantity.magnitude().numerator())
         }
         QuantityCarrier::Decimal(domain) => {
-            let Ok(exact) = quire_exact::DecimalType::new(
+            let Ok(exact) = filament_exact::DecimalType::new(
                 domain.lower().clone(),
                 domain.upper().clone(),
                 u64::from(domain.min_scale()),
                 u64::from(domain.max_scale()),
-                quire_exact::RoundingMode::Exact,
+                filament_exact::RoundingMode::Exact,
             ) else {
                 return false;
             };
@@ -535,11 +535,11 @@ impl TypeEnvironment {
                         }
                         for (operand, measured_bits) in [
                             (
-                                quire_exact::NumericMembershipOperand::RationalNumerator,
+                                filament_exact::NumericMembershipOperand::RationalNumerator,
                                 quantity.magnitude().numerator().magnitude_bits(),
                             ),
                             (
-                                quire_exact::NumericMembershipOperand::RationalDenominator,
+                                filament_exact::NumericMembershipOperand::RationalDenominator,
                                 quantity.magnitude().denominator().magnitude_bits(),
                             ),
                         ] {
@@ -1093,12 +1093,12 @@ mod tests {
     use core::cell::{Cell, RefCell};
     use std::time::Instant;
 
-    use ix_trace_rs::trace;
-    use quire_exact::{
+    use filament_exact::{
         from_admitted, Cancel, CancelCause, CollectionKind, CollectionType, Decimal, DecimalType,
         EnumMember, EnumShape, Identifier, Integer, IntegerInterval, ObjectId, ObjectReference,
         OptionValue, Rational, RationalDomain, RoundingMode, UnionMember, UnionValue,
     };
+    use ix_trace_rs::trace;
 
     use super::*;
     use crate::declaration::{
@@ -2214,7 +2214,7 @@ mod tests {
     #[trace("TC-908", "FR-109-AC-1", "FR-109-AC-7", "FR-122-AC-3")]
     #[test]
     fn bounded_numeric_value_checks_all_three_integer_and_six_rational_operands() {
-        use quire_exact::NumericMembershipOperand as Operand;
+        use filament_exact::NumericMembershipOperand as Operand;
 
         let i = |value: i64| Integer::from(value);
         let interval = |lower, upper| IntegerInterval::spanning(i(lower), i(upper));
@@ -2364,7 +2364,7 @@ mod tests {
                 0,
             ),
             Err(BoundedSuppliedAdmissionError::NumericSize {
-                operand: quire_exact::NumericMembershipOperand::IntegerValue,
+                operand: filament_exact::NumericMembershipOperand::IntegerValue,
                 measured_bits: 1,
                 limit_bits: 0,
                 locus: second,
@@ -2537,7 +2537,7 @@ mod tests {
     #[trace("TC-917", "FR-117-AC-1", "FR-117-AC-2", "FR-122-AC-3")]
     #[test]
     fn bounded_numeric_type_links_check_expected_then_actual_endpoints() {
-        use quire_exact::NumericTypeEndpoint as Endpoint;
+        use filament_exact::NumericTypeEndpoint as Endpoint;
 
         let i = |n: i64| Integer::from(n);
         let interval = |lower, upper| IntegerInterval::spanning(i(lower), i(upper));
@@ -2771,7 +2771,7 @@ mod tests {
                 3 => assert_eq!(
                     result,
                     Err(BoundedSuppliedAdmissionError::NumericTypeSize {
-                        position: quire_exact::NumericTypeEndpoint::IntegerExpectedLower,
+                        position: filament_exact::NumericTypeEndpoint::IntegerExpectedLower,
                         measured_bits: 1,
                         limit_bits: 0,
                         locus: link,
@@ -3025,7 +3025,7 @@ mod tests {
                 1,
             ),
             Err(BoundedSuppliedAdmissionError::NumericTypeSize {
-                position: quire_exact::NumericTypeEndpoint::DecimalExpectedUpper,
+                position: filament_exact::NumericTypeEndpoint::DecimalExpectedUpper,
                 measured_bits: 2,
                 limit_bits: 1,
                 locus: link,
@@ -3213,7 +3213,7 @@ mod tests {
     #[trace("TC-918", "FR-118-AC-2")]
     #[test]
     fn bounded_decimal_type_link_checks_four_endpoints_and_metadata() {
-        use quire_exact::NumericTypeEndpoint as Endpoint;
+        use filament_exact::NumericTypeEndpoint as Endpoint;
 
         let small = decimal_link(0, 1, 0, 2, RoundingMode::Exact);
         for (expected, actual, position) in [
@@ -4031,7 +4031,7 @@ mod tests {
         assert_eq!(invalid_budget.spent(), 2);
     }
 
-    /// The QSV projection preserves a constructed kernel resource failure's
+    /// The FSV projection preserves a constructed kernel resource failure's
     /// actual native request and rooted locus. Exact TC-920 tests the kernel's
     /// production allocation and checked-capacity mechanisms separately.
     #[trace("TC-908", "FR-109-AC-8", "FR-122-AC-2")]
@@ -4476,7 +4476,7 @@ mod tests {
     #[trace("TC-1287", "FR-497-AC-6", "FR-142-AC-30")]
     #[test]
     fn carried_quantity_admission_checks_unit_and_carrier_grid() {
-        use quire_exact::{CarriedQuantityType, Quantity, QuantityCarrier, UnitId};
+        use filament_exact::{CarriedQuantityType, Quantity, QuantityCarrier, UnitId};
 
         let unit = UnitId::declared(crate::test_identity::node(91));
         let other_unit = UnitId::declared(crate::test_identity::node(92));
@@ -4531,7 +4531,7 @@ mod tests {
         let rational_type = ValueType::carried_quantity(CarriedQuantityType::new(
             unit.clone(),
             QuantityCarrier::Rational(
-                quire_exact::RationalDomain::new(
+                filament_exact::RationalDomain::new(
                     IntegerInterval::spanning(Integer::from(-3_i64), Integer::from(7_i64)),
                     IntegerInterval::spanning(Integer::one(), Integer::from(12_i64)),
                 )
@@ -4552,8 +4552,8 @@ mod tests {
     #[trace("TC-1287", "FR-497-AC-6", "FR-142-AC-30")]
     #[test]
     fn bounded_carried_quantity_checks_endpoints_and_unit_first() {
-        use quire_exact::NumericMembershipOperand as Operand;
-        use quire_exact::{CarriedQuantityType, Quantity, QuantityCarrier, UnitId};
+        use filament_exact::NumericMembershipOperand as Operand;
+        use filament_exact::{CarriedQuantityType, Quantity, QuantityCarrier, UnitId};
 
         let unit = UnitId::declared(crate::test_identity::node(93));
         let other_unit = UnitId::declared(crate::test_identity::node(94));
@@ -4608,7 +4608,7 @@ mod tests {
         let expected = ValueType::carried_quantity(CarriedQuantityType::new(
             unit,
             QuantityCarrier::Decimal(
-                quire_exact::DecimalType::new(
+                filament_exact::DecimalType::new(
                     Integer::from(-100_i64),
                     Integer::from(100_i64),
                     2,

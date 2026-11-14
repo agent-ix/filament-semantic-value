@@ -3,7 +3,7 @@ id: FR-128
 title: "Consume admitted structural identities in semantic values"
 type: FR
 relationships:
-  - target: "ix://agent-ix/quire-semantic-value/FR-060"
+  - target: "ix://agent-ix/filament-semantic-value/FR-060"
     type: "depends_on"
 ---
 # FR-128: Consume admitted structural identities in semantic values
@@ -11,7 +11,7 @@ relationships:
 ## Description
 
 When the caller supplies admitted structural `NodeKey`, `EffectiveId`, `UniverseId` and `UnitId`
-values, `quire-semantic-value` SHALL carry and compare those values by their typed components.
+values, `filament-semantic-value` SHALL carry and compare those values by their typed components.
 It SHALL NOT convert them to byte-array keys or derive an identity digest. The crate's separate
 no-minting boundary is [FR-060](./FR-060-the-crate-mints-no-identity.md).
 
@@ -52,7 +52,7 @@ no-minting boundary is [FR-060](./FR-060-the-crate-mints-no-identity.md).
 
 ## Dependencies
 
-- `quire-exact` supplies the structural identity types and distinct `UnitId` arms.
+- `filament-exact` supplies the structural identity types and distinct `UnitId` arms.
 - The caller supplies identities already admitted by its checking or model stage.
 
 ## Status
@@ -61,6 +61,6 @@ IR-1142 PR #73 carries the structural consumer migration. Its compound-unit
 identity path classifies term-vector, encoder-stack and structural-node-copy
 reservation failures as typed `Allocation` with the requested bytes. The
 preexisting `Integer` clone and decimal formatting in that path still allocate
-infallibly; IR-1149 owns their fallible APIs and QSV consumption under QSL
+infallibly; IR-1149 owns their fallible APIs and FSV consumption under FSL
 FR-259 Behavior 6. FR-128-AC-1 through AC-5 and the full FR-259 obligation
 retain their original scope.

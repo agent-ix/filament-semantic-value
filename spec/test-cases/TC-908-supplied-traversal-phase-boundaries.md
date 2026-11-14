@@ -3,9 +3,9 @@ id: TC-908
 title: "Supplied membership retains its phase, cumulative work and original cancellation"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-109
+  - target: ix://agent-ix/filament-semantic-value/FR-109
     type: verifies
-  - target: ix://agent-ix/quire-semantic-value/FR-122
+  - target: ix://agent-ix/filament-semantic-value/FR-122
     type: verifies
 ---
 # TC-908: Supplied membership retains its phase, cumulative work and original cancellation
@@ -42,11 +42,11 @@ do not obtain the expected count by reading the counter being tested.
    membership logic. Compare the reported allocation amount/unit with the
    real reservation request. Separately trigger checked representation/size
    overflow. Retry without denial and compare membership with the fresh run.
-6. Exercise a membership-triggered shared helper through `src/supplied_membership.rs` with one cumulative supplied-admission budget. Assert each logical event is charged once to that budget, with the original cancellation handle and typed locus retained on a denied event. QSL FR-486 owns conversion and evaluator observations.
+6. Exercise a membership-triggered shared helper through `src/supplied_membership.rs` with one cumulative supplied-admission budget. Assert each logical event is charged once to that budget, with the original cancellation handle and typed locus retained on a denied event. FSL FR-486 owns conversion and evaluator observations.
 7. Inspect every claimed helper against its authoritative implementation and
    actual input bounds. Establish comparisons/arithmetic, peak temporary storage,
    cancellation response boundary and reservation route. For Decimal, check the
-   actual `DecimalType::try_contains` source against [exact-kernel FR-372](ix://agent-ix/quire-exact/FR-372):
+   actual `DecimalType::try_contains` source against [exact-kernel FR-372](ix://agent-ix/filament-exact/FR-372):
    the caller authenticates `B >= max(bits(c), bits(lo), bits(hi))`, with zero
    counted as one bit, and `S >=` the actual coefficient-alignment shift before
    the call. Confirm the one-request `4 × ceil(B / 32)`-byte scratch bound, the
@@ -54,7 +54,7 @@ do not obtain the expected count by reading the counter being tested.
    Fail caller qualification if either input bound or typed error projection is
    missing. An unpublished union candidate cannot qualify through a small
    logical event total.
-8. Through the integrated QSV supplied-admission caller, use an independently
+8. Through the integrated FSV supplied-admission caller, use an independently
    enumerated Decimal value-visit fixture at exact N and N-1, followed by a
    second argument on the same budget. Assert inclusive membership and adjacent
    nonmembership against an independent oracle. Cancel the original handle at
@@ -63,15 +63,15 @@ do not obtain the expected count by reading the counter being tested.
    additional supplied-admission charge. Confirm a caller without source-backed `B` or `S` does not
    claim Decimal support or select a default.
 9. Construct the typed exact-kernel capacity and allocation failure variants
-   with distinct measured fields and pass each through QSV's production Decimal
+   with distinct measured fields and pass each through FSV's production Decimal
    error-projection path at a rooted Decimal locus. Assert distinct
    supplied-admission causes, preserved measurements and locus, and no
-   nonmembership, traversal-limit or evaluation projection. This tests QSV's
+   nonmembership, traversal-limit or evaluation projection. This tests FSV's
    mapping without replacing the kernel helper or claiming that the public
    `DecimalType::try_contains` call can inject an allocator denial or construct
-   a synthetic capacity overflow. [Exact-kernel TC-920](ix://agent-ix/quire-exact/TC-920)
+   a synthetic capacity overflow. [Exact-kernel TC-920](ix://agent-ix/filament-exact/TC-920)
    owns the actual scratch-denial and checked-capacity mechanism controls.
-10. Inside QSV, stage a private arena-ID counter at its final issuable value.
+10. Inside FSV, stage a private arena-ID counter at its final issuable value.
     Create one ordinary arena through the same constructor path used by supplied
     runs, then request another and assert the one-unit `ArenaIdentifiers`
     capacity error repeats without ID reuse. Pass that failed construction
@@ -97,12 +97,12 @@ evidence.
 
 ## Status
 
-The sealed-union QSV supplied-admission exact-N and N-1 controls are implemented
+The sealed-union FSV supplied-admission exact-N and N-1 controls are implemented
 by `sealed_tree_10k_budgeted_admission_spends_exact_n_on_small_stack` and
 `sealed_tree_10k_budgeted_admission_denies_last_event_on_small_stack` in
 `tests/union_staging.rs`. They enumerate 60,002 logical events for a 10,000-link
 Tree and check completion and the final denied descriptor event on a small stack.
-Non-ignored QSV caller controls traced to FR-109-AC-1 through FR-109-AC-5
+Non-ignored FSV caller controls traced to FR-109-AC-1 through FR-109-AC-5
 execute in `src/declaration/membership.rs`, `src/supplied_membership.rs`,
 `src/declaration.rs`, `tests/union_staging.rs` and
 `tests/bounded_numeric_reservation.rs`. The ignored
@@ -113,7 +113,7 @@ budgets, size and nonmembership loci, original-handle cancellation, and typed
 kernel resource-error projection. The actual kernel scratch-denial and checked-
 capacity mechanisms remain exact-kernel TC-920's controls. Full deep Tree
 defaults, value-occurrence limits, replay converted nodes and evaluation
-exact/one-less parity remain QSL consumer
+exact/one-less parity remain FSL consumer
 controls under QSL-778. Numerical default hypotheses and hosted source
 predictions are not an oracle for N. The Decimal caller tests are traced to
 FR-122-AC-2; bounded Integer/Rational and absent-B NumericDomain caller tests
@@ -131,6 +131,6 @@ FR-109-AC-9 executes in
 `arena_constructor_exhaustion_reports_one_native_unit_without_reusing_an_id`,
 `scoped_arena_takes_no_process_id_and_shares_none_with_issued_arenas`, and
 `exhausted_path_arena_stops_before_a_supplied_run_or_locus_exists`. These
-QSV-internal controls exercise the constructor and supplied-run mapping with a
+FSV-internal controls exercise the constructor and supplied-run mapping with a
 private counter, without mutating the process counter or claiming a public
 exhaustion trigger.

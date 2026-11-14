@@ -3,7 +3,7 @@ id: TC-923
 title: "An exact conversion hands the next operation an identified quantity"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-124
+  - target: ix://agent-ix/filament-semantic-value/FR-124
     type: verifies
 ---
 # TC-923: An exact conversion hands the next operation an identified quantity
@@ -11,7 +11,7 @@ relationships:
 ## Description
 
 Verify [FR-124](../functional/FR-124-identified-quantity-from-an-exact-conversion.md)
-through the public `quire_semantic_value::quantity` API: the pair that
+through the public `filament_semantic_value::quantity` API: the pair that
 `Conversion::identified_quantity` returns, its retention and resolution in a
 `UnitScope`, its refusals, and that it adds no charge. Steps 1 to 6 and 8 are
 executable tests; step 7 is the implementing PR's inspection and build gate.

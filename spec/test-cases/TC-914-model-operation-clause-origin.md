@@ -3,7 +3,7 @@ id: TC-914
 title: "A model operation clause has its own origin"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-114
+  - target: ix://agent-ix/filament-semantic-value/FR-114
     type: verifies
 ---
 # TC-914: A model operation clause has its own origin

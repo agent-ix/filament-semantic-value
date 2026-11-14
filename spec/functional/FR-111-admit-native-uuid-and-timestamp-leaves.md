@@ -3,18 +3,18 @@ id: FR-111
 title: "Admit native UUID and Timestamp as distinct semantic-value leaves"
 type: FR
 relationships:
-  - target: ix://agent-ix/quire-exact/FR-370
+  - target: ix://agent-ix/filament-exact/FR-370
     type: references
 ---
 # FR-111: Admit native UUID and Timestamp as distinct semantic-value leaves
 
 ## Description
 
-`quire-semantic-value` SHALL accept the kernel's native UUID and Timestamp
+`filament-semantic-value` SHALL accept the kernel's native UUID and Timestamp
 types as terminal declaration types and their matching values as terminal
 object attributes. It SHALL retain their distinct value kinds through
 admission and object-closure lookup. The kernel owns native payload parsing
-and value-kind identity; QSV owns its declaration and closure walks.
+and value-kind identity; FSV owns its declaration and closure walks.
 
 ## Use case
 
@@ -25,18 +25,18 @@ without supplying an object that either value references.
 
 ## Behavior
 
-1. QSV SHALL accept `ValueType::Uuid` and `ValueType::Timestamp` as terminal
+1. FSV SHALL accept `ValueType::Uuid` and `ValueType::Timestamp` as terminal
    declared types, including object attributes. Neither contains an IEEE
-   value or a composite-recursion edge. QSV's type admission SHALL admit a
+   value or a composite-recursion edge. FSV's type admission SHALL admit a
    native value only under its matching native type.
-   QSV's type admission SHALL refuse a crossed native value or an Integer value.
-   QSV's equality-conversion table SHALL NOT convert a bounded Integer source
+   FSV's type admission SHALL refuse a crossed native value or an Integer value.
+   FSV's equality-conversion table SHALL NOT convert a bounded Integer source
    to either native target.
-2. QSV's `ObjectClosure` SHALL admit required native attributes whose values
+2. FSV's `ObjectClosure` SHALL admit required native attributes whose values
    match their declared types and retain their native kinds and payloads on
-   attribute lookup. QSV's `ObjectClosure` SHALL treat both native values as
+   attribute lookup. FSV's `ObjectClosure` SHALL treat both native values as
    terminal during reference closure and SHALL NOT resolve either as an object
-   reference. QSV's `ObjectClosure` SHALL refuse a crossed native value or
+   reference. FSV's `ObjectClosure` SHALL refuse a crossed native value or
    Integer in either native attribute as that field's `TypeMismatch` before
    returning a closure.
 
@@ -53,6 +53,6 @@ Implemented.
 
 ## Dependencies
 
-- [Quire Exact FR-370](ix://agent-ix/quire-exact/FR-370) owns the distinct
-  native kernel types, values, constructors and payload contract. QSV uses
+- [Filament Exact FR-370](ix://agent-ix/filament-exact/FR-370) owns the distinct
+  native kernel types, values, constructors and payload contract. FSV uses
   those values and does not parse a caller's tagged wire form.

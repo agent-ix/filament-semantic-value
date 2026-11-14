@@ -8,7 +8,7 @@ relationships: []
 
 ## Description
 
-`quire-semantic-value` SHALL give `ExpressionOwner` a variant for one `requires` or
+`filament-semantic-value` SHALL give `ExpressionOwner` a variant for one `requires` or
 `ensures` clause of a model operation. It names the operation, the clause kind
 and the clause's position in the operation's list of that kind, so a location
 in such a clause is told apart from a location in any other clause, including
@@ -48,4 +48,4 @@ Implemented.
 
 ## Dependencies
 
-- None. The caller's behaviour under this origin lives in `agent-ix/quire-spec-language`.
+- None. The caller's behaviour under this origin lives in `agent-ix/filament-spec-language`.

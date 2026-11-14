@@ -10,20 +10,20 @@ mod common;
 use std::collections::BTreeMap;
 use std::num::NonZeroU64;
 
-use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     ChargePoint, DecimalType, InexactTarget, InjectedDenial, Integer, IntegerInterval, LimitKind,
     Meter, NodeKey, Outcome, Quantity, QuantityCarrier, Rational, Refusal, RoundingMode,
     ScalarLimits, UnitDomain, UnitId,
 };
-use quire_semantic_value::quantity::{
+use filament_semantic_value::quantity::{
     convert_quantity, Conversion, ConvertedValue, HandoffRefusal, QuantityTarget, QuantityUnit,
     UnitScope, UnitTable,
 };
-use quire_semantic_value::semantic_node::IdentityRefusal;
-use quire_semantic_value::unit::{
+use filament_semantic_value::semantic_node::IdentityRefusal;
+use filament_semantic_value::unit::{
     CompoundUnit, DimensionNode, NominalDeclaration, UnitGraph, UnitNode,
 };
+use ix_trace_rs::trace;
 
 fn meter() -> Meter {
     Meter::new(ScalarLimits {
@@ -220,7 +220,7 @@ fn the_handed_over_quantity_resolves_and_converts_on_to_joules() {
     // conversion, and no edge: the source and target are roots.
     for meter in [&first, &second] {
         assert_eq!(meter.admission_count(), 3);
-        assert_eq!(meter.consumed(quire_exact::LimitKind::UnitEdges), 0);
+        assert_eq!(meter.consumed(filament_exact::LimitKind::UnitEdges), 0);
     }
 
     // The same, per charge point, through the injected-denial seam: denying
@@ -261,14 +261,14 @@ fn the_handed_over_quantity_resolves_and_converts_on_to_joules() {
     }
 }
 
-fn identified_unit(conversion: &Conversion) -> quire_semantic_value::quantity::IdentifiedUnit {
+fn identified_unit(conversion: &Conversion) -> filament_semantic_value::quantity::IdentifiedUnit {
     conversion.identified_quantity().unwrap().1
 }
 
 /// A copy of `table` that also holds the identified unit.
 fn table_with(
     table: &UnitTable,
-    unit: &quire_semantic_value::quantity::IdentifiedUnit,
+    unit: &filament_semantic_value::quantity::IdentifiedUnit,
 ) -> UnitTable {
     let mut scope = UnitScope::new(table);
     scope.form(unit.clone());
@@ -308,7 +308,7 @@ fn a_decimal_or_integer_conversion_is_not_a_quantity() {
     let target = declared(&table, MILLIJOULE);
     let source = table.resolve(&joule).unwrap();
     let decimal =
-        quire_exact::DecimalType::new(int(0), int(10_000), 0, 0, RoundingMode::Exact).unwrap();
+        filament_exact::DecimalType::new(int(0), int(10_000), 0, 0, RoundingMode::Exact).unwrap();
     for representation in [
         QuantityTarget::Decimal(decimal),
         QuantityTarget::Integer {
@@ -763,7 +763,7 @@ fn a_non_exact_conversion_into_an_unidentifiable_target_is_not_exact() {
     let source_id = table.insert(source_unit).unwrap();
     let source = Quantity::new(rational(1), source_id);
     let decimal =
-        quire_exact::DecimalType::new(int(0), int(10), 0, 0, RoundingMode::Exact).unwrap();
+        filament_exact::DecimalType::new(int(0), int(10), 0, 0, RoundingMode::Exact).unwrap();
     let Outcome::Completed(conversion) = convert_quantity(
         table.resolve(&source).unwrap(),
         &target,

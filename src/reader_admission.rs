@@ -8,7 +8,7 @@ use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::alloc::Layout;
-use quire_exact::{
+use filament_exact::{
     Charge, ChargePoint, Incomplete, Integer, LimitKind, Meter, NodeKey, Rational,
     RationalArithmetic,
 };
@@ -238,7 +238,7 @@ fn terms(
             locus,
         )?;
         let exponent = exponent.try_clone().map_err(|error| match error {
-            quire_exact::IntegerCopyError::Allocation { requested } => {
+            filament_exact::IntegerCopyError::Allocation { requested } => {
                 EqualityMaterializationError::Allocation { locus, requested }
             }
         })?;
@@ -384,7 +384,7 @@ fn unit(
 ///
 /// This is a public hidden convention surface, not a language-level capability.
 /// Ordinary callers consume the reader's opaque value instead. Neither this
-/// function nor its seal may be re-exported through IR/QSL consumer facades.
+/// function nor its seal may be re-exported through IR/FSL consumer facades.
 ///
 /// # Errors
 /// Original typed resource/arithmetic failures retain their first unit/edge

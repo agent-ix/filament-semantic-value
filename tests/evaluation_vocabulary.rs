@@ -5,14 +5,14 @@ use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
-use ix_trace_rs::trace;
-use quire_semantic_value::catalog::{
+use filament_semantic_value::catalog::{
     CatalogCode, Category, InternalFault, UndefinedCoded, UndefinedReason, UndefinedRecord,
 };
-use quire_semantic_value::supplied_stop::{
+use filament_semantic_value::supplied_stop::{
     AttemptedCount, SuppliedCause, SuppliedContext, SuppliedFailure, SuppliedLimit,
     SuppliedLimitKind, SuppliedPhase, SuppliedStop,
 };
+use ix_trace_rs::trace;
 
 fn hash_of(code: &CatalogCode) -> u64 {
     let mut hasher = DefaultHasher::new();
@@ -176,7 +176,7 @@ fn supplied_stop_names_its_field_and_wraps_as_a_stop() {
     );
     let cancelled = SuppliedStop {
         context,
-        cause: SuppliedCause::Cancelled(quire_exact::CancelCause::Requested),
+        cause: SuppliedCause::Cancelled(filament_exact::CancelCause::Requested),
     };
     assert!(cancelled.limit().is_none());
     assert!(matches!(

@@ -4,21 +4,21 @@
 
 mod common;
 
-use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     CollectionKind, CollectionType, EnumMember, FieldValue, FloatType, IeeeWidth, IllTypedCause,
     Integer, NodeKey, ObjectId, ObjectReference, OptionValue, Presence, UnionMember, UnionValue,
     Value, ValueType, VariantId,
 };
-use quire_semantic_value::containment::{
+use filament_semantic_value::containment::{
     GraphCause, GraphNode, GraphNodeId, GraphSlot, ValueGraph,
 };
-use quire_semantic_value::declaration::{
+use filament_semantic_value::declaration::{
     Component, CompositeDeclaration, CompositeShape, ConstructionCause, DeclarationCause,
     EnvironmentFailure, EnvironmentLimitKind, FieldDeclaration, ObjectTypeDeclaration,
     RecursionEdges, TypeEnvironment, TypeEnvironmentLimits, UnionMemberDeclaration,
 };
-use quire_semantic_value::object_closure::{ObjectClosure, ObjectClosureCause};
+use filament_semantic_value::object_closure::{ObjectClosure, ObjectClosureCause};
+use ix_trace_rs::trace;
 
 #[allow(
     clippy::disallowed_methods,
@@ -71,10 +71,10 @@ fn native_union_positions_preserve_released_leaf_kinds_and_equality() {
     let payload = || {
         vec![
             Value::Uuid(
-                quire_exact::Uuid::from_canonical_text("00112233-4455-6677-8899-aabbccddeeff")
+                filament_exact::Uuid::from_canonical_text("00112233-4455-6677-8899-aabbccddeeff")
                     .unwrap(),
             ),
-            Value::Timestamp(quire_exact::Timestamp::from_canonical_text("1").unwrap()),
+            Value::Timestamp(filament_exact::Timestamp::from_canonical_text("1").unwrap()),
         ]
     };
     let left = environment
@@ -96,10 +96,14 @@ fn native_union_positions_preserve_released_leaf_kinds_and_equality() {
     assert_eq!(refusal.cause, ConstructionCause::TypeMismatch);
     let equality = environment
         .check_equality(
-            quire_semantic_value::declaration::EqualityOperator::Equal,
-            quire_semantic_value::declaration::EqualityOperand::typed(ValueType::Composite(key(1))),
-            quire_semantic_value::declaration::EqualityOperand::typed(ValueType::Composite(key(1))),
-            &quire_semantic_value::enumeration::EnumMemberIndex::default(),
+            filament_semantic_value::declaration::EqualityOperator::Equal,
+            filament_semantic_value::declaration::EqualityOperand::typed(ValueType::Composite(
+                key(1),
+            )),
+            filament_semantic_value::declaration::EqualityOperand::typed(ValueType::Composite(
+                key(1),
+            )),
+            &filament_semantic_value::enumeration::EnumMemberIndex::default(),
         )
         .unwrap();
     assert!(matches!(
@@ -107,7 +111,7 @@ fn native_union_positions_preserve_released_leaf_kinds_and_equality() {
             &environment,
             &left,
             &right,
-            &mut quire_exact::Meter::new(quire_exact::ScalarLimits {
+            &mut filament_exact::Meter::new(filament_exact::ScalarLimits {
                 integer_bits: u64::MAX,
                 decimal_digits: u64::MAX,
                 scale_expansion: u64::MAX,
@@ -120,7 +124,7 @@ fn native_union_positions_preserve_released_leaf_kinds_and_equality() {
                 result_units: u64::MAX
             })
         ),
-        quire_exact::Outcome::Completed(true)
+        filament_exact::Outcome::Completed(true)
     ));
 }
 fn variant(owner: NodeKey, name: &str) -> VariantId {
@@ -201,7 +205,7 @@ fn supplied_trusted_carriers_still_require_registry_admission() {
         supplied(key(1), "Rect", vec![integer(2)]),
         supplied(key(1), "Circle", vec![Value::Boolean(true)]),
         Value::Enum(EnumMember::new(variant(key(1), "Rect"), 0)),
-        quire_exact::from_admitted_slots(key(1), vec![].into_boxed_slice()),
+        filament_exact::from_admitted_slots(key(1), vec![].into_boxed_slice()),
     ] {
         assert!(!env.admits(&ty, &bad).unwrap());
     }
@@ -236,9 +240,9 @@ fn sealed_supplied_union_carrier_is_admitted() {
 #[test]
 fn record_and_tuple_carriers_are_not_admitted_at_a_union_type() {
     let env = TypeEnvironment::new([shape()], []).unwrap();
-    let record = || quire_exact::from_admitted_slots(key(1), vec![].into_boxed_slice());
+    let record = || filament_exact::from_admitted_slots(key(1), vec![].into_boxed_slice());
     let tuple = || {
-        quire_exact::from_admitted_slots(
+        filament_exact::from_admitted_slots(
             key(1),
             vec![FieldValue::Present(integer(1))].into_boxed_slice(),
         )
@@ -318,9 +322,11 @@ fn unused_ieee_member_denies_all_keyed_kinds_but_sequence_admits() {
                 None,
             )))
             .unwrap_err(),
-            quire_semantic_value::declaration::TypeCheckError::Refused(quire_exact::IllTyped {
-                cause: IllTypedCause::OperatorIneligible
-            })
+            filament_semantic_value::declaration::TypeCheckError::Refused(
+                filament_exact::IllTyped {
+                    cause: IllTypedCause::OperatorIneligible
+                }
+            )
         );
     }
     assert_eq!(
@@ -393,8 +399,8 @@ fn named_union_edges_require_escape_and_report_exact_cycle() {
 #[trace("TC-915", "FR-115-AC-4")]
 #[test]
 fn cancelled_handle_stops_union_topology_admission() {
-    let cancel = quire_exact::Cancel::new();
-    cancel.cancel(quire_exact::CancelCause::Requested);
+    let cancel = filament_exact::Cancel::new();
+    cancel.cancel(filament_exact::CancelCause::Requested);
     let Err(EnvironmentFailure::Limit(limit)) = TypeEnvironment::bounded_with_cancel(
         [shape()],
         [],
@@ -404,12 +410,15 @@ fn cancelled_handle_stops_union_topology_admission() {
         panic!("cancelled union admission must stop with the work limit");
     };
     assert_eq!(limit.kind(), EnvironmentLimitKind::WorkUnits);
-    assert_eq!(cancel.tripped(), Some(quire_exact::CancelCause::Requested));
+    assert_eq!(
+        cancel.tripped(),
+        Some(filament_exact::CancelCause::Requested)
+    );
     assert!(TypeEnvironment::bounded_with_cancel(
         [shape()],
         [],
         TypeEnvironmentLimits::default(),
-        &quire_exact::Cancel::new(),
+        &filament_exact::Cancel::new(),
     )
     .is_ok());
 }
@@ -521,13 +530,13 @@ fn ten_thousand_supplied_union_links_are_admitted_on_small_stack() {
                 );
             }
             assert_eq!(
-                quire_exact::plan_equality(&value, &independent)
+                filament_exact::plan_equality(&value, &independent)
                     .unwrap()
                     .pair_events(),
                 &Integer::from(20_001_u64)
             );
             assert_eq!(
-                quire_exact::compare_keys(&value, &independent),
+                filament_exact::compare_keys(&value, &independent),
                 Some(std::cmp::Ordering::Equal)
             );
             assert_eq!(value.occ(), Integer::from(20_001_u64));
@@ -660,9 +669,9 @@ fn union_graph_construction_preserves_cycle_locus_and_positional_payloads() {
 #[trace("FR-323-AC-1")]
 #[test]
 fn registry_binding_drives_identifier_key_order_and_checked_equality() {
-    use quire_exact::{compare_keys, Meter, Outcome, ScalarLimits};
-    use quire_semantic_value::declaration::{EqualityOperand, EqualityOperator};
-    use quire_semantic_value::enumeration::EnumMemberIndex;
+    use filament_exact::{compare_keys, Meter, Outcome, ScalarLimits};
+    use filament_semantic_value::declaration::{EqualityOperand, EqualityOperator};
+    use filament_semantic_value::enumeration::EnumMemberIndex;
     let env = TypeEnvironment::new([shape()], []).unwrap();
     let rect = env
         .union(
@@ -769,11 +778,11 @@ fn nested_union_admission_traverses_record_tuple_option_and_collection() {
     // Built through the checked constructors: a Record or Tuple holds only members
     // admitted at construction, and the admission walk stops at a conforming
     // composite (FR-113).
-    let wrap = |shape| -> Result<Value, quire_semantic_value::declaration::ConstructionRefusal> {
+    let wrap = |shape| -> Result<Value, filament_semantic_value::declaration::ConstructionRefusal> {
         let record = env.record(key(2), vec![("shape", FieldValue::Present(shape))])?;
         let tuple = env.tuple(key(3), vec![record])?;
         let ty = ValueType::Composite(key(3));
-        let collection = quire_exact::from_admitted(
+        let collection = filament_exact::from_admitted(
             CollectionType::new(CollectionKind::Sequence, ty.clone(), None),
             vec![tuple],
         );
@@ -806,7 +815,7 @@ fn nested_union_admission_traverses_record_tuple_option_and_collection() {
 #[trace("FR-321-AC-1")]
 #[test]
 fn registry_evaluation_orders_payloads_and_propagates_first_stop() {
-    use quire_exact::{
+    use filament_exact::{
         CheckedInvariantCause, Deferred, Meter, Outcome, Refusal, ScalarLimits, Undefined,
     };
     use std::cell::RefCell;

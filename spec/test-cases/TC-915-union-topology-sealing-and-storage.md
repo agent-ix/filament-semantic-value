@@ -3,7 +3,7 @@ id: TC-915
 title: "Union topology precedes atomic verified sealing"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-115
+  - target: ix://agent-ix/filament-semantic-value/FR-115
     type: verifies
 ---
 # TC-915: Union topology precedes atomic verified sealing
@@ -38,11 +38,11 @@ reservation seam; do not substitute a budget denial for an allocation denial.
 Topology is available before final identity. Runtime membership is available
 only after atomic exact sealing. Storage denial retains the actual request,
 capacity remains distinct, and neither is fabricated as an input or work failure.
-These are SV source controls, not QSL run, codec or canonical minting evidence.
+These are SV source controls, not FSL run, codec or canonical minting evidence.
 
 ## Status
 
 Union value membership controls now run through the typed-event admission walk
 in tests/union_registry.rs and tests/union_staging.rs. Registry and sealing
-storage controls also run in the unit tests of src/declaration.rs. QSL run,
+storage controls also run in the unit tests of src/declaration.rs. FSL run,
 codec and canonical minting evidence remains separate from these SV controls.

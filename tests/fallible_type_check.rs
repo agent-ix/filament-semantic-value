@@ -2,17 +2,17 @@
 //! External checking under real allocator denial in its own integration binary.
 mod common;
 
-use ix_trace_rs::trace;
-use quire_exact::{
+use filament_exact::{
     CollectionKind, CollectionType, FloatType, IeeeWidth, IllTyped, IllTypedCause, ValueType,
 };
-use quire_semantic_value::declaration::{
+use filament_semantic_value::declaration::{
     CompositeDeclaration, CompositeShape, StorageRequest, StorageUnit, TypeCheckError,
     TypeEnvironment,
 };
+use ix_trace_rs::trace;
 
 #[global_allocator]
-static ALLOCATOR: qsv_failing_allocator::FailingAllocator = qsv_failing_allocator::FailingAllocator;
+static ALLOCATOR: fsv_failing_allocator::FailingAllocator = fsv_failing_allocator::FailingAllocator;
 
 fn collection(kind: CollectionKind, element: ValueType) -> ValueType {
     ValueType::collection(CollectionType::new(kind, element, None))
@@ -47,14 +47,14 @@ fn real_denials_cover_root_ieee_pending_growth_and_visited_then_retry() {
     // Exact reservations allocate: root pointer, IEEE pending pointer, visited
     // (key pointer, unit), then pending grows from one to two to three pointers.
     let pointer = core::mem::size_of::<&ValueType>();
-    let visited = core::mem::size_of::<(&quire_exact::NodeKey, ())>();
+    let visited = core::mem::size_of::<(&filament_exact::NodeKey, ())>();
     for (successful, expected_bytes) in [pointer, pointer, visited, 2 * pointer, 3 * pointer]
         .into_iter()
         .enumerate()
     {
-        qsv_failing_allocator::arm(successful);
+        fsv_failing_allocator::arm(successful);
         let result = environment.try_check_type(&ty);
-        let denied = qsv_failing_allocator::disarm();
+        let denied = fsv_failing_allocator::disarm();
         assert_eq!(denied, Some(expected_bytes), "boundary {successful}");
         assert_eq!(
             result,
@@ -77,9 +77,9 @@ fn real_denials_cover_root_ieee_pending_growth_and_visited_then_retry() {
             refused(IllTypedCause::TypeMismatch),
         ),
     ] {
-        qsv_failing_allocator::arm(0);
+        fsv_failing_allocator::arm(0);
         let result = environment.try_check_type(&ty);
-        let denied = qsv_failing_allocator::disarm();
+        let denied = fsv_failing_allocator::disarm();
         assert_eq!(denied, Some(pointer));
         assert_eq!(
             result,
@@ -128,9 +128,9 @@ fn external_semantics_preserve_nested_traversal_and_refusal_priority() {
         );
     }
     let unknown = ValueType::Composite(common::node(999));
-    qsv_failing_allocator::arm(1);
+    fsv_failing_allocator::arm(1);
     let unknown_result = environment.try_check_type(&unknown);
-    let denied = qsv_failing_allocator::disarm();
+    let denied = fsv_failing_allocator::disarm();
     assert_eq!(
         denied, None,
         "unknown-key errors allocate no identity clone"
@@ -156,8 +156,8 @@ fn external_semantics_preserve_nested_traversal_and_refusal_priority() {
 #[trace("TC-929", "FR-132-AC-1")]
 #[test]
 fn ieee_discovery_preserves_record_tuple_union_and_cycle_behavior() {
-    use quire_exact::{Identifier, MapType, Presence};
-    use quire_semantic_value::declaration::{
+    use filament_exact::{Identifier, MapType, Presence};
+    use filament_semantic_value::declaration::{
         FieldDeclaration, ObjectTypeDeclaration, UnionMemberDeclaration,
     };
     let float = ValueType::Float(FloatType::exact(IeeeWidth::Binary64));

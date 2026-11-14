@@ -10,7 +10,7 @@
 //! references resolved in an [`ObjectClosure`].
 //!
 //! The closure names only kernel ids and this crate's values, checked against
-//! this crate's [`TypeEnvironment`], so it sits beside `containment`. QSL FR-089's
+//! this crate's [`TypeEnvironment`], so it sits beside `containment`. FSL FR-089's
 //! `PopulationId` to population-binding correspondence is not here: the binding
 //! is the caller's model's, so the caller holds that map beside the closure it
 //! builds.
@@ -27,7 +27,7 @@ use alloc::vec::Vec;
 
 use crate::declaration::{fill_slots, ConstructionRefusal, FieldRef, TypeEnvironment};
 use crate::relationship_extent::{ManifestOutcome, Resolution};
-use quire_exact::{EffectiveId, FieldValue, ObjectReference, UniverseId, Value};
+use filament_exact::{EffectiveId, FieldValue, ObjectReference, UniverseId, Value};
 
 /// Why an object closure does not close.
 ///
@@ -116,7 +116,7 @@ impl ObjectClosure {
     ///
     /// Every reference any attribute holds must name an object of the
     /// closure, except a reference in `tolerated_dangling`: the exact
-    /// targets a caller has already decided may dangle. QSL FR-106 admission
+    /// targets a caller has already decided may dangle. FSL FR-106 admission
     /// passes the references its check 8 skipped, because they name an
     /// incomplete population nothing requires; every other caller passes
     /// `&[]`.
@@ -162,7 +162,7 @@ impl ObjectClosure {
     }
 
     /// The closure's own reference whose universe is `universe` and
-    /// declared key is `object`, whatever its most-specific type is (QSL FR-109:
+    /// declared key is `object`, whatever its most-specific type is (FSL FR-109:
     /// a `Function` selection's object argument names an object by
     /// population and key alone, with no declared type of its own to
     /// narrow the search). `None` when no admitted object matches, or more
@@ -428,8 +428,8 @@ mod tests {
         Component, ConstructionCause, FieldDeclaration, ObjectTypeDeclaration,
     };
     use alloc::vec;
+    use filament_exact::{EffectiveId, ObjectId, Presence, Timestamp, Uuid, ValueType};
     use ix_trace_rs::trace;
-    use quire_exact::{EffectiveId, ObjectId, Presence, Timestamp, Uuid, ValueType};
 
     #[allow(
         clippy::disallowed_methods,
@@ -607,14 +607,14 @@ mod tests {
 
     /// The integer a slot holds; `None` for an absent, null or non-integer
     /// slot (`FieldValue` has no `PartialEq`).
-    fn held(slot: &FieldValue) -> Option<quire_exact::Integer> {
+    fn held(slot: &FieldValue) -> Option<filament_exact::Integer> {
         match slot {
             FieldValue::Present(Value::Integer(integer)) => Some(integer.clone()),
             FieldValue::Present(_) | FieldValue::Absent | FieldValue::Null => None,
         }
     }
 
-    fn integer(value: i64) -> Option<quire_exact::Integer> {
+    fn integer(value: i64) -> Option<filament_exact::Integer> {
         Some(value.into())
     }
 
@@ -808,7 +808,7 @@ mod tests {
         clippy::disallowed_methods,
         reason = "a test fixture needs a NodeKey; production code mints none"
     )]
-    fn node_key(byte: u8) -> quire_exact::NodeKey {
+    fn node_key(byte: u8) -> filament_exact::NodeKey {
         crate::test_identity::node(u64::from(byte))
     }
 
@@ -818,7 +818,7 @@ mod tests {
     #[trace("TC-904", "FR-106-AC-11")]
     #[test]
     fn union_payload_references_are_closed_over() {
-        use quire_exact::{UnionMember, UnionValue};
+        use filament_exact::{UnionMember, UnionValue};
         let types = types();
         let present_ref = reference(A, "present");
         let missing = reference(B, "missing");
@@ -861,7 +861,7 @@ mod tests {
     #[trace("TC-904", "FR-106-AC-11")]
     #[test]
     fn dangling_references_are_refused_through_option_collection_and_composite() {
-        use quire_exact::{
+        use filament_exact::{
             from_admitted, from_admitted_slots, CollectionKind, CollectionType, OptionValue,
         };
         let types = types();

@@ -3,7 +3,7 @@ id: TC-926
 title: "The catalog vocabulary and the supplied-value stop records through the public API"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-126
+  - target: ix://agent-ix/filament-semantic-value/FR-126
     type: verifies
 ---
 # TC-926: The catalog vocabulary and the supplied-value stop records through the public API

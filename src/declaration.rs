@@ -10,7 +10,7 @@
 //! `admits_equality_conversion`, `operand_value`). The environment also
 //! carries the package's quantity [`UnitTable`], since a `ValueType::Quantity`
 //! names its unit only by id. None of these are kernel types, so they live here,
-//! over `quire_exact`'s own `Value`/`ValueType`, where a compiler and a backend
+//! over `filament_exact`'s own `Value`/`ValueType`, where a compiler and a backend
 //! share them. An object type's operations carry the domain package's effect
 //! frame, a caller's model type, so they stay with the caller beside the
 //! environment, and a reached [`TypeEnvironmentLimits`] ceiling is this
@@ -19,15 +19,15 @@
 //!
 //! The equality layer lives here because it is parameterized over a
 //! `TypeEnvironment` and a checked `ValueType`. The occurrence-pair walk it
-//! schedules is [`quire_exact::planned_equality_with_plan`], called directly by
+//! schedules is [`filament_exact::planned_equality_with_plan`], called directly by
 //! `CheckedEquality::run`, which takes the verdict from its evaluation: the kernel's own `plan_pairs` is
 //! `pub(crate)` there, and this layer never needs the lower-level pair count that
-//! an evaluator gets straight from `quire_exact::member_equal`.
+//! an evaluator gets straight from `filament_exact::member_equal`.
 //!
 //! [`FieldDeclaration`], [`Component`], [`ConstructionCause`] and
 //! [`ConstructionRefusal`] are not kernel types: a field is identified here by
 //! its declared *name* (a `str`-keyed lookup, `match_names`/`fill_slots`), not by
-//! the kernel's opaque `MemberId` (`quire_exact::FieldDeclaration`'s own key).
+//! the kernel's opaque `MemberId` (`filament_exact::FieldDeclaration`'s own key).
 //! `ConstructionCause` also carries `UnknownDeclaration`, which the kernel's own
 //! `ConstructionCause` has no need of: the kernel's `record`/`tuple` take their
 //! declared shape directly, with no registry lookup to fail, while this module's
@@ -38,17 +38,17 @@
 //! `FieldDeclaration`); it does its own name-keyed checking through
 //! `fill_slots`/`match_names`, and then calls the kernel's trusted, unchecked
 //! [`from_admitted_slots`] to materialize the result -- mirroring
-//! `quire_exact::OptionValue::from_admitted`'s identical bypass role.
+//! `filament_exact::OptionValue::from_admitted`'s identical bypass role.
 //!
-//! QSL FR-089-AC-6: kernel `ValueType::admits` refuses every
+//! FSL FR-089-AC-6: kernel `ValueType::admits` refuses every
 //! `(ValueType::Population, Value::Population)` pair outright -- the
-//! declared-maximum comparison (QSL FR-089-AC-5) is the caller layer's own check.
+//! declared-maximum comparison (FSL FR-089-AC-5) is the caller layer's own check.
 //! `Population` is QSpec FR-153's own restriction: it is never nested inside a
 //! record field, tuple position, option payload or collection element (every
 //! such context is refused earlier, at declaration admission, by
 //! `TypeEnvironment::walk_type_refusal`), so none of this module's `admits()`
 //! calls (`fill_slots`'s field check) ever receive a `Population` pair; only an
-//! evaluator's top-level parameter-admission loop needs the QSL FR-089-AC-5
+//! evaluator's top-level parameter-admission loop needs the FSL FR-089-AC-5
 //! compensation, since `Population<T>[N]` is reachable there directly as a bare
 //! parameter type.
 
@@ -59,12 +59,14 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use quire_exact::{
+use filament_exact::{
     compare_shifted, power_of_ten_bits, sbits, sdigits, Charge, ChargePoint, CheckedInvariantCause,
     ComparisonOperator, Decimal, DecimalOperation, DecimalType, IllTyped, IllTypedCause, Integer,
     LimitKind, Meter, Outcome, Presence, Quantity, Rational, Refusal, UnitId,
 };
-use quire_exact::{from_admitted_slots, retain_composite, Deferred, FieldValue, Value, ValueType};
+use filament_exact::{
+    from_admitted_slots, retain_composite, Deferred, FieldValue, Value, ValueType,
+};
 
 use crate::enumeration::{compare_enum, EnumMemberIndex};
 use crate::quantity::{
@@ -73,12 +75,14 @@ use crate::quantity::{
 use crate::stop::{outcome_from_stop, outcome_into_stop, Stop};
 use core::alloc::Layout;
 use core::fmt;
-use quire_exact::CollectionKind;
-use quire_exact::EffectiveId;
-use quire_exact::EnumShape;
-use quire_exact::IdentityCopyError;
-use quire_exact::NodeKey;
-use quire_exact::{compare_text, evaluate_decimal, Identifier, UnionMember, UnionValue, VariantId};
+use filament_exact::CollectionKind;
+use filament_exact::EffectiveId;
+use filament_exact::EnumShape;
+use filament_exact::IdentityCopyError;
+use filament_exact::NodeKey;
+use filament_exact::{
+    compare_text, evaluate_decimal, Identifier, UnionMember, UnionValue, VariantId,
+};
 
 use crate::supplied_membership::{
     InvalidMembershipCause, MembershipLocus, MembershipPart, MembershipPathArena,
@@ -560,8 +564,8 @@ mod storage_reservation_tests {
     )]
     #[test]
     fn cancellation_keeps_the_work_limit_classification() {
-        let cancel = quire_exact::Cancel::new();
-        cancel.cancel(quire_exact::CancelCause::Requested);
+        let cancel = filament_exact::Cancel::new();
+        cancel.cancel(filament_exact::CancelCause::Requested);
         let denied = TypeEnvironment::bounded_with_cancel(
             [],
             [ObjectTypeDeclaration::new(
@@ -582,7 +586,10 @@ mod storage_reservation_tests {
         assert_eq!(limit.kind(), EnvironmentLimitKind::WorkUnits);
         assert_eq!(limit.configured_bound(), DEFAULT_WORK_UNITS);
         assert_eq!(limit.actual(), 1);
-        assert_eq!(cancel.tripped(), Some(quire_exact::CancelCause::Requested));
+        assert_eq!(
+            cancel.tripped(),
+            Some(filament_exact::CancelCause::Requested)
+        );
     }
 
     /// Trace: FR-108-AC-4
@@ -842,7 +849,7 @@ pub struct FieldDeclaration {
     value_type: ValueType,
     presence: Presence,
     /// The inherited field this one redefines (QSpec FR-151
-    /// `quire.model.normalize.redefine/v1`), if any. Only an object-type
+    /// `filament.model.normalize.redefine/v1`), if any. Only an object-type
     /// field may carry one.
     redefines: Option<FieldRef>,
 }
@@ -1053,7 +1060,7 @@ pub fn fill_slots<F: AsRef<FieldDeclaration>, D: Clone + IntoIterator<Item = F>>
 
 /// Build a composite value of `declaration` from already name-checked
 /// slots, through the kernel's trusted
-/// [`from_admitted_slots`](quire_exact::from_admitted_slots) bypass: this
+/// [`from_admitted_slots`](filament_exact::from_admitted_slots) bypass: this
 /// module's `TypeEnvironment` construction methods have already checked
 /// every slot against its own declared shape, so no second, kernel-side
 /// check is needed (and the kernel's own checked `record`/`tuple` are not
@@ -1519,7 +1526,7 @@ impl PendingTypeEnvironment {
         })
     }
 
-    /// Complete QSV's value-type safety and storage checks after the caller's
+    /// Complete FSV's value-type safety and storage checks after the caller's
     /// conformance verdict. An error consumes the pending admission, so no
     /// partially admitted environment can escape.
     pub fn complete(self) -> Admission<TypeEnvironment> {
@@ -1645,12 +1652,12 @@ impl<'a> IntoIterator for AttributeSet<'a> {
     }
 }
 
-/// The QSL NFR-012 default `ancestor_steps` ceiling, in `supertypes` edges,
+/// The FSL NFR-012 default `ancestor_steps` ceiling, in `supertypes` edges,
 /// which [`TypeEnvironment::new`] admits under. It equals the model's own
 /// `ModelNormalizationLimits` and `PopulationAdmissionLimits` defaults.
 pub const DEFAULT_ANCESTOR_STEPS: u64 = 16_777_216;
 
-/// The QSL NFR-012 default admission `work_units` budget, the same value as the
+/// The FSL NFR-012 default admission `work_units` budget, the same value as the
 /// model's own `ModelNormalizationLimits::work_units` and
 /// `PopulationAdmissionLimits::work_units` defaults.
 pub const DEFAULT_WORK_UNITS: u64 = 16_777_216;
@@ -1660,7 +1667,7 @@ pub const DEFAULT_WORK_UNITS: u64 = 16_777_216;
 /// Every member is a real limit; zero is never "unlimited".
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct TypeEnvironmentLimits {
-    /// QSL FR-082's `ancestor_steps`: the most distinct `supertypes` edges one
+    /// FSL FR-082's `ancestor_steps`: the most distinct `supertypes` edges one
     /// object-type or composite conformance walk may follow, an edge count
     /// over the walk's closure and never a chain depth.
     pub ancestor_steps: u64,
@@ -1685,11 +1692,11 @@ impl Default for TypeEnvironmentLimits {
 struct WorkBudget {
     spent: u64,
     limit: u64,
-    cancel: Option<quire_exact::Cancel>,
+    cancel: Option<filament_exact::Cancel>,
 }
 
 impl WorkBudget {
-    fn new(limit: u64, cancel: Option<&quire_exact::Cancel>) -> Self {
+    fn new(limit: u64, cancel: Option<&filament_exact::Cancel>) -> Self {
         Self {
             spent: 0,
             limit,
@@ -1697,15 +1704,18 @@ impl WorkBudget {
         }
     }
 
-    /// Charge `units`, or the [`EnvironmentLimitKind::WorkUnits`] limit (QSL FR-082)
+    /// Charge `units`, or the [`EnvironmentLimitKind::WorkUnits`] limit (FSL FR-082)
     /// once the budget would be passed, naming the cumulative total the
     /// refused charge would have reached.
     fn charge(&mut self, units: usize) -> Result<(), EnvironmentLimit> {
         let units = u64::try_from(units).unwrap_or(u64::MAX);
-        // A cancelled handle (QSL FR-276) denies the charge as an exhausted
+        // A cancelled handle (FSL FR-276) denies the charge as an exhausted
         // budget does; the caller that owns the handle reports the
         // cancellation.
-        let cancelled = self.cancel.as_ref().is_some_and(quire_exact::Cancel::poll);
+        let cancelled = self
+            .cancel
+            .as_ref()
+            .is_some_and(filament_exact::Cancel::poll);
         match self.spent.checked_add(units) {
             Some(spent) if spent <= self.limit && !cancelled => {
                 self.spent = spent;
@@ -1775,7 +1785,7 @@ impl Stopped {
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum EnvironmentLimitKind {
     /// `ancestor_steps`: one object type's or composite's conformance walk
-    /// would follow more distinct `supertypes` edges than the ceiling (QSL FR-082).
+    /// would follow more distinct `supertypes` edges than the ceiling (FSL FR-082).
     AncestorSteps,
     /// `work_units`: the admission's cumulative object/composite
     /// ancestor-closure and flattening work.
@@ -1948,7 +1958,7 @@ pub enum ReservationDecision {
     CapacityExceeded,
 }
 
-/// Why type-environment admission produced no environment (QSL FR-082,
+/// Why type-environment admission produced no environment (FSL FR-082,
 /// FR-108). Storage failures carry no configured bound or declaration cause.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum EnvironmentFailure {
@@ -2269,7 +2279,7 @@ impl<'a, K: Ord, V> IntoIterator for &'a OrderedIndex<K, V> {
     }
 }
 
-/// Type-environment admission's outcome (QSL FR-082).
+/// Type-environment admission's outcome (FSL FR-082).
 pub type Admission<T> = Result<T, EnvironmentFailure>;
 
 /// Why a declaration set is not admitted.
@@ -2427,7 +2437,7 @@ impl TypeEnvironment {
     }
 
     /// Admit `composites` and `object_types` as one closed environment,
-    /// under the QSL NFR-012 default ceilings ([`TypeEnvironmentLimits::default`]).
+    /// under the FSL NFR-012 default ceilings ([`TypeEnvironmentLimits::default`]).
     /// See [`Self::bounded`].
     pub fn new(
         composites: impl IntoIterator<Item = CompositeDeclaration>,
@@ -2458,11 +2468,11 @@ impl TypeEnvironment {
 
     /// Admit `composites` and `object_types` as one closed environment.
     ///
-    /// `limits.ancestor_steps` is the QSL FR-082 ceiling the model walks this
+    /// `limits.ancestor_steps` is the FSL FR-082 ceiling the model walks this
     /// package's conformance under at evaluation (the population binding's
     /// own `ancestor_steps`). An object type or composite whose walk would
     /// follow more distinct `supertypes` edges than that stops admission with an
-    /// [`EnvironmentLimitKind::AncestorSteps`] limit (QSL FR-082). Check time is the stricter
+    /// [`EnvironmentLimitKind::AncestorSteps`] limit (FSL FR-082). Check time is the stricter
     /// side: every conformance question the checker answers from this
     /// environment is one evaluation completes with the same verdict.
     ///
@@ -2495,15 +2505,15 @@ impl TypeEnvironment {
         Self::bounded_with_reservations(composites, object_types, limits, None, &reservations)
     }
 
-    /// [`Self::bounded`] with the caller's [`quire_exact::Cancel`] handle
-    /// polled at every work charge (QSL FR-276). A cancelled handle stops
+    /// [`Self::bounded`] with the caller's [`filament_exact::Cancel`] handle
+    /// polled at every work charge (FSL FR-276). A cancelled handle stops
     /// admission with a [`EnvironmentLimitKind::WorkUnits`] limit, which the
     /// caller that owns the handle reads as its cancellation.
     pub fn bounded_with_cancel(
         composites: impl IntoIterator<Item = CompositeDeclaration>,
         object_types: impl IntoIterator<Item = ObjectTypeDeclaration>,
         limits: TypeEnvironmentLimits,
-        cancel: &quire_exact::Cancel,
+        cancel: &filament_exact::Cancel,
     ) -> Admission<Self> {
         Self::bounded_with_reservations(
             composites,
@@ -2514,14 +2524,14 @@ impl TypeEnvironment {
         )
     }
 
-    /// Begin admission for QSL's model assembly under the same limits and
+    /// Begin admission for FSL's model assembly under the same limits and
     /// cancellation handle as direct admission. The caller must finish its
     /// complete conformance verdict before calling [`PendingTypeEnvironment::complete`].
     pub fn stage_model_with_cancel(
         composites: impl IntoIterator<Item = CompositeDeclaration>,
         object_types: impl IntoIterator<Item = ObjectTypeDeclaration>,
         limits: TypeEnvironmentLimits,
-        cancel: &quire_exact::Cancel,
+        cancel: &filament_exact::Cancel,
     ) -> Admission<PendingTypeEnvironment> {
         Self::prepare(
             composites,
@@ -2537,7 +2547,7 @@ impl TypeEnvironment {
         composites: impl IntoIterator<Item = CompositeDeclaration>,
         object_types: impl IntoIterator<Item = ObjectTypeDeclaration>,
         limits: TypeEnvironmentLimits,
-        cancel: Option<&quire_exact::Cancel>,
+        cancel: Option<&filament_exact::Cancel>,
         reserve: &R,
     ) -> Admission<Self> {
         Self::prepare(composites, object_types, limits, cancel, reserve, true)?
@@ -2548,7 +2558,7 @@ impl TypeEnvironment {
         composites: impl IntoIterator<Item = CompositeDeclaration>,
         object_types: impl IntoIterator<Item = ObjectTypeDeclaration>,
         limits: TypeEnvironmentLimits,
-        cancel: Option<&quire_exact::Cancel>,
+        cancel: Option<&filament_exact::Cancel>,
         reserve: &R,
         check_widening: bool,
     ) -> Admission<PendingTypeEnvironment> {
@@ -3076,14 +3086,14 @@ impl TypeEnvironment {
             resolved = match wrapper {
                 ValueType::Option(_) => ValueType::option(resolved),
                 ValueType::Collection(collection) => {
-                    ValueType::collection(quire_exact::CollectionType::new(
+                    ValueType::collection(filament_exact::CollectionType::new(
                         collection.kind(),
                         resolved,
                         collection.bound(),
                     ))
                 }
                 ValueType::Map(map) => ValueType::map(
-                    quire_exact::MapType::new(map.key().clone(), resolved, map.bound())
+                    filament_exact::MapType::new(map.key().clone(), resolved, map.bound())
                         .expect("a map key that was already valid stays valid"),
                 ),
                 ValueType::Boolean
@@ -3206,7 +3216,7 @@ impl TypeEnvironment {
         arena: &mut MembershipPathArena,
         at: MembershipLocus,
         budget: &mut SuppliedMembershipBudget,
-        cancel: &quire_exact::Cancel,
+        cancel: &filament_exact::Cancel,
     ) -> Result<(), SuppliedAdmissionError<Cause>> {
         self.admit_supplied_with(
             expected,
@@ -3231,7 +3241,7 @@ impl TypeEnvironment {
         arena: &mut MembershipPathArena,
         at: MembershipLocus,
         budget: &mut SuppliedMembershipBudget,
-        cancel: &quire_exact::Cancel,
+        cancel: &filament_exact::Cancel,
         permit: &impl Fn(StorageRequest) -> bool,
     ) -> Result<(), SuppliedAdmissionError<Cause>> {
         self.admit_supplied_with(expected, value, arena, at, budget, cancel, permit)
@@ -3244,7 +3254,7 @@ impl TypeEnvironment {
         arena: &mut MembershipPathArena,
         at: MembershipLocus,
         budget: &mut SuppliedMembershipBudget,
-        cancel: &quire_exact::Cancel,
+        cancel: &filament_exact::Cancel,
         reservation: &impl ReservationPolicy,
     ) -> Result<(), SuppliedAdmissionError<Cause>> {
         self.admits_walk_observed(
@@ -3270,7 +3280,7 @@ impl TypeEnvironment {
 
     /// [`Self::admits`] for the evaluator callers, whose kernel `Stop` has no
     /// storage-failure channel (a typed one needs a storage variant in
-    /// `quire-exact`'s `Stop` or `CheckedInvariantCause`). A failed worklist
+    /// `filament-exact`'s `Stop` or `CheckedInvariantCause`). A failed worklist
     /// reservation is a real allocator failure here, and it aborts as the
     /// infallible worklist growth did before the seam. It is never reported as
     /// a value that is not admitted.
@@ -3342,7 +3352,7 @@ impl TypeEnvironment {
     /// every `Composite` key names an admitted composite declaration,
     /// every `Reference<T>` names an admitted model object type, and no set,
     /// bag or ordered set has an IEEE-bearing element type. Enum declarations
-    /// are checked against the quire-spec-language checker's admitted scope;
+    /// are checked against the filament-spec-language checker's admitted scope;
     /// this environment does not hold or check them.
     /// Storage failures retain the native reservation request and allocate no
     /// diagnostic payload. The environment and input remain unchanged.
@@ -4257,7 +4267,7 @@ impl TypeEnvironment {
         Ok(own)
     }
 
-    /// Stop at the first object type, in key order, whose QSL FR-082 conformance
+    /// Stop at the first object type, in key order, whose FSL FR-082 conformance
     /// walk follows more than `limit` `supertypes` edges: an
     /// [`EnvironmentLimitKind::AncestorSteps`] limit whose actual counter is
     /// the ceiling plus one, the edge the walk would stop at. The model's
@@ -4376,7 +4386,7 @@ impl TypeEnvironment {
     /// Every object type's effective attribute set, flattened once.
     ///
     /// This applies QSpec FR-151's phase-4 redefinition result
-    /// (`quire.model.normalize.redefine/v1`) to the `redefines` links a
+    /// (`filament.model.normalize.redefine/v1`) to the `redefines` links a
     /// producer copies from the normalized domain package: a redefined field
     /// stays declared but is hidden in every type that also has its
     /// redefiner; when several redefinitions of one field reach a type, only
@@ -5593,7 +5603,7 @@ impl CheckedEquality {
                 compare_quantity(operator, l, r, meter)
             }
             (EqualitySchedule::Plan, _, _) => {
-                let equal = outcome_into_stop(quire_exact::planned_equality_with_plan(
+                let equal = outcome_into_stop(filament_exact::planned_equality_with_plan(
                     &left, &right, meter,
                 ))?
                 .equal();
@@ -5777,8 +5787,8 @@ fn integer_source_admits(lower: &Integer, upper: &Integer, target: &ValueType) -
 #[cfg(test)]
 mod native_type_tests {
     use super::*;
+    use filament_exact::{Timestamp, Uuid};
     use ix_trace_rs::trace;
-    use quire_exact::{Timestamp, Uuid};
 
     /// Native kinds are valid declared leaves and admit only their own values.
     #[trace("TC-910", "FR-111-AC-1", "FR-370-AC-1")]
@@ -5792,7 +5802,7 @@ mod native_type_tests {
         let timestamp =
             Value::Timestamp(Timestamp::from_canonical_text("1").expect("canonical timestamp"));
 
-        let bounded_integer = ValueType::Int(quire_exact::IntegerInterval::spanning(
+        let bounded_integer = ValueType::Int(filament_exact::IntegerInterval::spanning(
             Integer::zero(),
             Integer::one(),
         ));
@@ -5860,7 +5870,7 @@ mod native_type_tests {
             .expect("native String has kernel equality");
         assert_eq!(equality.schedule(), EqualitySchedule::Plan);
 
-        let mut meter = Meter::new(quire_exact::ScalarLimits {
+        let mut meter = Meter::new(filament_exact::ScalarLimits {
             integer_bits: u64::MAX,
             decimal_digits: u64::MAX,
             scale_expansion: u64::MAX,
@@ -5982,8 +5992,8 @@ mod native_type_tests {
         )
         .expect("record and tuple admit");
         let union_at = |key| {
-            quire_exact::UnionValue::from_admitted(
-                quire_exact::UnionMember::from_admitted(key, "m").expect("fixture union member"),
+            filament_exact::UnionValue::from_admitted(
+                filament_exact::UnionMember::from_admitted(key, "m").expect("fixture union member"),
                 vec![Value::Integer(Integer::one())],
             )
         };
@@ -5995,7 +6005,7 @@ mod native_type_tests {
             assert!(!types
                 .admits(
                     &ValueType::option(ValueType::Composite(key.clone())),
-                    &quire_exact::OptionValue::present(
+                    &filament_exact::OptionValue::present(
                         ValueType::Composite(key.clone()),
                         value.clone()
                     )
@@ -6209,13 +6219,14 @@ mod native_type_tests {
             .expect("record fixture matches its declared shape")
     }
 
-    fn text_type() -> quire_exact::TextType {
-        quire_exact::TextType::new(0, 4, quire_exact::TextProfile::Nfc).expect("valid Text type")
+    fn text_type() -> filament_exact::TextType {
+        filament_exact::TextType::new(0, 4, filament_exact::TextProfile::Nfc)
+            .expect("valid Text type")
     }
 
     fn composed_as_text() -> Value {
-        let payload = quire_exact::TextPayload::from_utf8("é".as_bytes()).expect("UTF-8");
-        let mut meter = Meter::new(quire_exact::ScalarLimits {
+        let payload = filament_exact::TextPayload::from_utf8("é".as_bytes()).expect("UTF-8");
+        let mut meter = Meter::new(filament_exact::ScalarLimits {
             integer_bits: u64::MAX,
             decimal_digits: u64::MAX,
             scale_expansion: u64::MAX,
@@ -6227,7 +6238,7 @@ mod native_type_tests {
             work_units: u64::MAX,
             result_units: u64::MAX,
         });
-        match quire_exact::admit_text(&payload, &text_type(), &mut meter) {
+        match filament_exact::admit_text(&payload, &text_type(), &mut meter) {
             Outcome::Completed(text) => Value::Text(text),
             _ => panic!("valid Text admission"),
         }
@@ -6450,8 +6461,8 @@ mod checked_invariant_tests {
     use super::*;
     use crate::enumeration::EnumDeclaration;
     use crate::unit::{DimensionNode, NominalDeclaration, UnitGraph, UnitNode};
+    use filament_exact::{EnumMember, ScalarLimits, UnitId};
     use ix_trace_rs::trace;
-    use quire_exact::{EnumMember, ScalarLimits, UnitId};
 
     fn meter() -> Meter {
         Meter::new(ScalarLimits {
@@ -6511,7 +6522,7 @@ mod checked_invariant_tests {
         assert_eq!(fault.code(), None);
         assert_eq!(fault.cause(), None);
         let ordinary = Refusal::IntegerOutOfDomain {
-            target: Box::new(quire_exact::IntegerInterval::spanning(
+            target: Box::new(filament_exact::IntegerInterval::spanning(
                 Integer::zero(),
                 Integer::one(),
             )),
@@ -6522,9 +6533,9 @@ mod checked_invariant_tests {
             admitted(
                 &TypeEnvironment::default(),
                 &ValueType::Boolean,
-                Outcome::Undefined(quire_exact::Undefined::DivisionByZero)
+                Outcome::Undefined(filament_exact::Undefined::DivisionByZero)
             ),
-            Err(Stop::Undefined(quire_exact::Undefined::DivisionByZero))
+            Err(Stop::Undefined(filament_exact::Undefined::DivisionByZero))
         ));
         let mut exhausted = Meter::new(ScalarLimits {
             integer_bits: 1024,
@@ -6631,7 +6642,7 @@ mod checked_invariant_tests {
             })
         ));
         let prior = Refusal::IntegerOutOfDomain {
-            target: Box::new(quire_exact::IntegerInterval::spanning(
+            target: Box::new(filament_exact::IntegerInterval::spanning(
                 Integer::zero(),
                 Integer::one(),
             )),
@@ -6681,7 +6692,7 @@ mod checked_invariant_tests {
                 &TypeEnvironment::default(),
                 &EqualityOperand::converted(
                     ValueType::Integer,
-                    ValueType::Int(quire_exact::IntegerInterval::spanning(
+                    ValueType::Int(filament_exact::IntegerInterval::spanning(
                         Integer::zero(),
                         Integer::zero(),
                     )),
@@ -6698,7 +6709,7 @@ mod checked_invariant_tests {
                 Integer::from(10_i64),
                 1,
                 1,
-                quire_exact::RoundingMode::Exact,
+                filament_exact::RoundingMode::Exact,
             )
             .unwrap(),
         );
@@ -6712,15 +6723,15 @@ mod checked_invariant_tests {
             ),
             CheckedInvariantCause::EqualityOperandNonIntegralDecimal,
         );
-        let unresolved = quire_exact::UnitId::declared(crate::test_identity::node(9));
+        let unresolved = filament_exact::UnitId::declared(crate::test_identity::node(9));
         refusal(
             operand_value(
                 &TypeEnvironment::default(),
                 &EqualityOperand::converted(
                     ValueType::Quantity(unresolved.clone()),
-                    ValueType::Quantity(quire_exact::UnitId::declared(crate::test_identity::node(
-                        10,
-                    ))),
+                    ValueType::Quantity(filament_exact::UnitId::declared(
+                        crate::test_identity::node(10),
+                    )),
                 ),
                 &Value::Quantity(Quantity::new(
                     Rational::from_integer(Integer::one()),
@@ -6852,7 +6863,7 @@ mod checked_invariant_tests {
         );
         equality.enum_members.record(member.clone());
         let value = Value::Enum(EnumMember::new(member.variant(), 0));
-        let mut meter = meter().with_injected_denial(quire_exact::InjectedDenial {
+        let mut meter = meter().with_injected_denial(filament_exact::InjectedDenial {
             point: ChargePoint::EnumIdentityRead,
             occurrence: core::num::NonZeroU64::new(1).unwrap(),
         });
@@ -6970,7 +6981,7 @@ mod checked_invariant_tests {
         let table = UnitTable::declared(&graph);
         let scope = UnitScope::new(&table);
         let quantity = Quantity::new(Rational::from_integer(Integer::one()), source.clone());
-        let mut denied = meter().with_injected_denial(quire_exact::InjectedDenial {
+        let mut denied = meter().with_injected_denial(filament_exact::InjectedDenial {
             point: ChargePoint::UnitIdentityRead,
             occurrence: core::num::NonZeroU64::new(1).unwrap(),
         });
@@ -6992,11 +7003,11 @@ mod checked_invariant_tests {
             scope.resolve(&quantity).unwrap(),
             scope.get(target.clone()).unwrap(),
             &QuantityTarget::Integer {
-                domain: quire_exact::IntegerInterval::spanning(
+                domain: filament_exact::IntegerInterval::spanning(
                     Integer::zero(),
                     Integer::from(10_i64),
                 ),
-                rounding: quire_exact::RoundingMode::Exact,
+                rounding: filament_exact::RoundingMode::Exact,
             },
             &mut meter(),
         )
@@ -7015,12 +7026,12 @@ mod work_budget_tests {
     use super::WorkBudget;
     use super::{EnvironmentLimit, EnvironmentLimitKind};
 
-    /// QSL FR-082: a denied charge names the cumulative total it would have
+    /// FSL FR-082: a denied charge names the cumulative total it would have
     /// reached: 3 spent, a budget of 4 and a charge of 2 report 5. The
     /// admitted spend is unchanged.
     #[test]
     fn a_denied_charge_reports_the_total_it_would_have_reached() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let mut budget = WorkBudget::new(4, Some(&cancel));
         assert_eq!(budget.charge(3), Ok(()));
         assert_eq!(
@@ -7035,8 +7046,8 @@ mod work_budget_tests {
 #[cfg(test)]
 mod staged_admission_tests {
     use super::*;
+    use filament_exact::{ObjectId, ObjectReference};
     use ix_trace_rs::trace;
-    use quire_exact::{ObjectId, ObjectReference};
 
     #[allow(
         clippy::disallowed_methods,
@@ -7063,12 +7074,12 @@ mod staged_admission_tests {
         ]
     }
 
-    /// A QSL refusal can abandon a structurally valid widening without QSV
+    /// A FSL refusal can abandon a structurally valid widening without FSV
     /// reporting it; completion still refuses the same unsafe field.
     #[trace("TC-909", "FR-110-AC-1", "FR-110-AC-4")]
     #[test]
     fn pending_widening_is_private_until_completion() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let declarations = || parent_child(ValueType::Boolean, ValueType::Integer);
         let pending = TypeEnvironment::stage_model_with_cancel(
             [],
@@ -7107,7 +7118,7 @@ mod staged_admission_tests {
     #[test]
     fn direct_admission_entry_points_retain_refusals_and_effective_fields() {
         type Entry =
-            fn(Vec<ObjectTypeDeclaration>, &quire_exact::Cancel) -> Admission<TypeEnvironment>;
+            fn(Vec<ObjectTypeDeclaration>, &filament_exact::Cancel) -> Admission<TypeEnvironment>;
         let entries: [(&str, Entry); 3] = [
             ("new", |types, _| TypeEnvironment::new([], types)),
             ("bounded", |types, _| {
@@ -7122,7 +7133,7 @@ mod staged_admission_tests {
                 )
             }),
         ];
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let invalid_target = || {
             vec![
                 ObjectTypeDeclaration::new(id(1), "Parent", vec![]),
@@ -7252,7 +7263,7 @@ mod staged_admission_tests {
     #[trace("TC-909", "FR-110-AC-3", "FR-110-AC-5")]
     #[test]
     fn pending_parent_projection_preserves_source_and_charges_budget() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let declarations = parent_child(ValueType::Integer, ValueType::Integer);
         let direct = TypeEnvironment::new([], declarations.clone()).expect("strict admits");
         let mut pending = TypeEnvironment::stage_model_with_cancel(
@@ -7322,7 +7333,7 @@ mod staged_admission_tests {
         assert_eq!(actual.identity(), expected.identity());
         assert_eq!(actual.field().value_type(), expected.field().value_type());
         assert!(actual.stands_for(&FieldRef::new(id(1), "f")));
-        let other_cancel = quire_exact::Cancel::new();
+        let other_cancel = filament_exact::Cancel::new();
         let pending = TypeEnvironment::stage_model_with_cancel(
             [],
             parent_child(ValueType::Integer, ValueType::Integer),
@@ -7330,16 +7341,16 @@ mod staged_admission_tests {
             &other_cancel,
         )
         .expect("structure admits before cancellation");
-        other_cancel.cancel(quire_exact::CancelCause::Requested);
+        other_cancel.cancel(filament_exact::CancelCause::Requested);
         assert!(matches!(
             pending.complete(),
             Err(EnvironmentFailure::Limit(found)) if found.kind() == EnvironmentLimitKind::WorkUnits
         ));
         assert_eq!(
             other_cancel.tripped(),
-            Some(quire_exact::CancelCause::Requested)
+            Some(filament_exact::CancelCause::Requested)
         );
-        let original = quire_exact::Cancel::new();
+        let original = filament_exact::Cancel::new();
         let shared = original.clone();
         let mut pending = TypeEnvironment::stage_model_with_cancel(
             [],
@@ -7349,12 +7360,15 @@ mod staged_admission_tests {
         )
         .expect("structure admits");
         drop(original);
-        shared.cancel(quire_exact::CancelCause::Requested);
+        shared.cancel(filament_exact::CancelCause::Requested);
         assert!(matches!(
             pending.declared_field(id(2), "f"),
             Err(PendingFieldFailure::Limit(found)) if found.kind() == EnvironmentLimitKind::WorkUnits
         ));
-        assert_eq!(shared.tripped(), Some(quire_exact::CancelCause::Requested));
+        assert_eq!(
+            shared.tripped(),
+            Some(filament_exact::CancelCause::Requested)
+        );
     }
 
     /// Pending declaration reads expose only a type's own field, not an
@@ -7362,7 +7376,7 @@ mod staged_admission_tests {
     #[trace("TC-909", "FR-110-AC-5", "FR-110-AC-6")]
     #[test]
     fn pending_declared_field_does_not_resolve_inheritance() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let mut pending = TypeEnvironment::stage_model_with_cancel(
             [],
             [
@@ -7423,7 +7437,7 @@ mod staged_admission_tests {
     )]
     #[test]
     fn pending_declaration_reads_charge_and_observe_cancellation() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let declarations = parent_child(ValueType::Integer, ValueType::Integer);
         let baseline = TypeEnvironment::stage_model_with_cancel(
             [],
@@ -7464,7 +7478,7 @@ mod staged_admission_tests {
         let before = pending.spent();
         assert_eq!(pending.object_types().expect("iteration fits").count(), 2);
         assert_eq!(pending.spent(), before + 3);
-        cancel.cancel(quire_exact::CancelCause::Requested);
+        cancel.cancel(filament_exact::CancelCause::Requested);
         assert!(matches!(
             pending.composite(crate::test_identity::node(1)),
             Err(PendingFieldFailure::Limit(_))
@@ -7493,7 +7507,7 @@ mod staged_admission_tests {
     #[trace("TC-909", "FR-110-AC-2", "FR-110-AC-5")]
     #[test]
     fn pending_parent_field_charges_each_scanned_entry() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let declarations = parent_child(ValueType::Integer, ValueType::Integer);
         let baseline = TypeEnvironment::stage_model_with_cancel(
             [],
@@ -7528,7 +7542,7 @@ mod staged_admission_tests {
     #[trace("TC-909", "FR-110-AC-3", "FR-110-AC-5")]
     #[test]
     fn proper_ancestor_target_uses_selected_immediate_parent_slot() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let target = FieldRef::new(id(1), "x");
         let types = vec![
             ObjectTypeDeclaration::new(
@@ -7612,7 +7626,7 @@ mod staged_admission_tests {
     #[trace("TC-909", "FR-110-AC-5")]
     #[test]
     fn pending_parent_projection_retains_distinct_parent_type_and_presence() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let target = FieldRef::new(id(1), "f");
         let declarations = [
             ObjectTypeDeclaration::new(
@@ -7662,7 +7676,7 @@ mod staged_admission_tests {
     #[trace("TC-909", "FR-110-AC-2", "FR-110-AC-6")]
     #[test]
     fn staged_structural_and_resource_failures_keep_typed_causes() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let unknown_member = [ObjectTypeDeclaration::new(
             id(1),
             "UnknownMember",
@@ -7900,15 +7914,15 @@ mod staged_admission_tests {
                     && found.configured_bound() == baseline_spent - 1
                     && found.actual() == u128::from(baseline_spent)
         ));
-        let cancelled = quire_exact::Cancel::new();
-        cancelled.cancel(quire_exact::CancelCause::Requested);
+        let cancelled = filament_exact::Cancel::new();
+        cancelled.cancel(filament_exact::CancelCause::Requested);
         assert!(matches!(
             TypeEnvironment::stage_model_with_cancel([], parent_child(ValueType::Integer, ValueType::Integer), TypeEnvironmentLimits::default(), &cancelled),
             Err(EnvironmentFailure::Limit(found)) if found.kind() == EnvironmentLimitKind::WorkUnits
         ));
         assert_eq!(
             cancelled.tripped(),
-            Some(quire_exact::CancelCause::Requested)
+            Some(filament_exact::CancelCause::Requested)
         );
     }
 
@@ -7916,7 +7930,7 @@ mod staged_admission_tests {
     #[trace("TC-909", "FR-110-AC-7")]
     #[test]
     fn reference_redefinition_accepts_only_subtype_and_preserves_identity() {
-        let cancel = quire_exact::Cancel::new();
+        let cancel = filament_exact::Cancel::new();
         let declarations = || {
             let mut types = parent_child(ValueType::Reference(id(4)), ValueType::Reference(id(3)));
             types.push(ObjectTypeDeclaration::new(id(3), "Target", vec![]));
@@ -8025,7 +8039,7 @@ mod ancestor_steps_tests {
         )
     }
 
-    /// QSL FR-082-AC-6: `ancestor_steps` counts `supertypes` edges over a
+    /// FSL FR-082-AC-6: `ancestor_steps` counts `supertypes` edges over a
     /// type's closure, never its types or its chain depth. A diamond
     /// `D -> B, C, A; B -> A; C -> A` has five edges over four types and no
     /// chain longer than two, so it admits at 5 and stops at 4. The refusal
@@ -8086,11 +8100,11 @@ mod ancestor_steps_tests {
 mod nested_conformance_tests {
     use super::*;
     use crate::supplied_membership::MembershipEvent;
-    use ix_trace_rs::trace;
-    use quire_exact::{
+    use filament_exact::{
         form, from_admitted, CollectionKind, CollectionType, ObjectId, ObjectReference,
         OptionValue, ScalarLimits,
     };
+    use ix_trace_rs::trace;
 
     /// The chain `P <- M <- C` (so `C` is a grandchild of `P`), the
     /// unrelated `U` (each a record with one `label` field), a record and a
@@ -8683,7 +8697,7 @@ mod nested_conformance_tests {
 
     /// `Set<P>` and `Bag<P>` holding a `C` and a `P` of equal shared fields
     /// have two elements and are admitted. This vector rests on the
-    /// quire-exact collection and equality changes of FR-376 to FR-378.
+    /// filament-exact collection and equality changes of FR-376 to FR-378.
     #[trace("TC-913", "FR-113-AC-6")]
     #[test]
     fn set_and_bag_of_parent_keep_equal_field_child_and_parent_distinct() {
@@ -8793,8 +8807,8 @@ mod nested_conformance_tests {
             Some(InvalidMembershipCause::ReferenceConformance)
         );
         assert_eq!(part, MembershipPart::Descriptor(0));
-        let union = quire_exact::UnionValue::from_admitted(
-            quire_exact::UnionMember::from_admitted(fx.p.clone(), "m")
+        let union = filament_exact::UnionValue::from_admitted(
+            filament_exact::UnionMember::from_admitted(fx.p.clone(), "m")
                 .expect("fixture union member"),
             vec![Value::Integer(Integer::one())],
         );

@@ -4,7 +4,7 @@ title: "Supplied Decimal type links preserve bounded identity and rooted stops"
 type: TC
 org: agent-ix
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-118
+  - target: ix://agent-ix/filament-semantic-value/FR-118
     type: verifies
 ---
 # TC-918: Supplied Decimal type links preserve bounded identity and rooted stops
@@ -38,9 +38,9 @@ through the public supplied-admission path using the published exact-kernel
    fixed-width limb-pair count at B and 32-bit limb boundaries, cancellation
    response gap and temporary-storage use. Verify at most `2ceil(B / 32)`
    limb-pair steps and constant auxiliary storage without allocation or
-   native-size conversion, as [exact FR-382](ix://agent-ix/quire-exact/FR-382)
+   native-size conversion, as [exact FR-382](ix://agent-ix/filament-exact/FR-382)
    requires. Check evaluator charges before and after refusal.
-4. Repeat a paired Decimal link through QSV's direct no-B admission path,
+4. Repeat a paired Decimal link through FSV's direct no-B admission path,
    with a permitted event, denied event and cancelled event. Inspect the
    production call for expected-first operands, original B and Cancel, and
    the absence of unbounded Decimal equality fallback.
@@ -56,5 +56,5 @@ evaluation debit occurs on supplied-admission refusal.
 
 ## Status
 
-PLANNED/UNRUN; exact FR-382 and its helper are published. QSV implementation
+PLANNED/UNRUN; exact FR-382 and its helper are published. FSV implementation
 and this acceptance test are still required.

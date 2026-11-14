@@ -1,5 +1,5 @@
 # =============================================================================
-# quire-semantic-value Makefile
+# filament-semantic-value Makefile
 # =============================================================================
 
 CARGO ?= cargo
@@ -42,7 +42,7 @@ lint:
 test:
 	$(CARGO) test
 
-# `quire-semantic-value` is `#![no_std]` + `alloc`, so it builds for a
+# `filament-semantic-value` is `#![no_std]` + `alloc`, so it builds for a
 # bare-metal target.
 .PHONY: build-no-std
 build-no-std:

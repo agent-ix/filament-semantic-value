@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Shared input-path admission diagnostics (FR-130).
 //!
-//! QSL and call evaluators populate this record where they classify an input
+//! FSL and call evaluators populate this record where they classify an input
 //! defect. Admission decisions and observation check order belong to callers.
 
 use alloc::collections::BTreeMap;
@@ -10,7 +10,7 @@ use alloc::vec::Vec;
 
 use crate::catalog::CatalogCode;
 use crate::catalog::InternalFault;
-use quire_exact::ConstructionCause;
+use filament_exact::ConstructionCause;
 
 /// A step from a checked value to a nested value, ordered outermost first.
 /// An empty sequence names the checked value itself.
@@ -73,7 +73,7 @@ mod tests {
 
     use super::{AdmissionRecord, ObservationAdmission, PathStep};
     use crate::catalog::{CatalogCode, InternalFault};
-    use quire_exact::ConstructionCause;
+    use filament_exact::ConstructionCause;
 
     /// Trace: FR-130-AC-1.
     #[test]

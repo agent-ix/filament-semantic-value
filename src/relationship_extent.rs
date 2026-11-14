@@ -4,7 +4,7 @@
 use alloc::vec::Vec;
 use core::ptr;
 
-use quire_exact::{EffectiveId, ObjectReference};
+use filament_exact::{EffectiveId, ObjectReference};
 
 use crate::declaration::{
     reserve_elements, GlobalReservations, OrderedIndex, ReservationPolicy, StorageFailure,
@@ -832,8 +832,8 @@ mod tests {
     use crate::declaration::ObjectTypeDeclaration;
     use alloc::vec;
     use core::cell::Cell;
+    use filament_exact::ObjectId;
     use ix_trace_rs::trace;
-    use quire_exact::ObjectId;
 
     struct CapacityPolicy;
 

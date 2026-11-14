@@ -3,12 +3,12 @@
 
 use std::cmp::Ordering;
 
-use ix_trace_rs::trace;
-use quire_canonical::{to_vec, Limits};
-use quire_semantic_value::model_transition::{
+use filament_semantic_value::model_transition::{
     InvalidModelTransition, ModelTransition, TransitionCause, TransitionSite,
 };
-use quire_semantic_value::semantic_node::IdentityRefusal;
+use filament_semantic_value::semantic_node::IdentityRefusal;
+use ix_trace_rs::trace;
+use quire_canonical::{to_vec, Limits};
 
 const BIG: Limits = Limits::new(1 << 26);
 const INCREMENT: &str = r#"{"digest_domain":"sha256-jcs","node":"test/counters/Counter/increment","package":"test/counters"}"#;

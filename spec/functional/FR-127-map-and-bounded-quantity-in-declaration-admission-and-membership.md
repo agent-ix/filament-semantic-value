@@ -4,41 +4,41 @@ title: "Map and BoundedQuantity in declaration admission and membership"
 type: FR
 org: agent-ix
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-109
+  - target: ix://agent-ix/filament-semantic-value/FR-109
     type: references
-  - target: ix://agent-ix/quire-semantic-value/FR-111
+  - target: ix://agent-ix/filament-semantic-value/FR-111
     type: references
-  - target: ix://agent-ix/quire-semantic-value/FR-115
+  - target: ix://agent-ix/filament-semantic-value/FR-115
     type: references
-  - target: ix://agent-ix/quire-semantic-value/FR-117
+  - target: ix://agent-ix/filament-semantic-value/FR-117
     type: references
-  - target: ix://agent-ix/quire-exact/FR-386
+  - target: ix://agent-ix/filament-exact/FR-386
     type: references
-  - target: ix://agent-ix/quire-exact/FR-387
+  - target: ix://agent-ix/filament-exact/FR-387
     type: references
-  - target: ix://agent-ix/quire-exact/FR-381
+  - target: ix://agent-ix/filament-exact/FR-381
     type: references
-  - target: ix://agent-ix/quire-exact/FR-376
+  - target: ix://agent-ix/filament-exact/FR-376
     type: references
-  - target: ix://agent-ix/quire-specification/FR-142
+  - target: ix://agent-ix/filament-specification/FR-142
     type: references
-  - target: ix://agent-ix/quire-specification/FR-149
+  - target: ix://agent-ix/filament-specification/FR-149
     type: references
-  - target: ix://agent-ix/quire-specification/FR-143
+  - target: ix://agent-ix/filament-specification/FR-143
     type: references
-  - target: ix://agent-ix/quire-specification/FR-153
+  - target: ix://agent-ix/filament-specification/FR-153
     type: references
-  - target: ix://agent-ix/quire-specification/FR-154
+  - target: ix://agent-ix/filament-specification/FR-154
     type: references
 ---
 # FR-127: Map and BoundedQuantity in declaration admission and membership
 
 ## Description
 
-`quire-exact` added `ValueType::Map` (QExact FR-386, `Map<Text, V>[min, max]`,
+`filament-exact` added `ValueType::Map` (QExact FR-386, `Map<Text, V>[min, max]`,
 a type with no kernel values) and `ValueType::BoundedQuantity` (QExact FR-387,
 `Quantity<U>[min, max]`, admitting only in-range quantities of `U`).
-`quire-semantic-value` SHALL treat both explicitly in every walk over
+`filament-semantic-value` SHALL treat both explicitly in every walk over
 `ValueType` that it owns, so that neither is silently handled by a wildcard or
 leaf arm that was written before they existed. This requirement fixes, for each
 walk, how a `Map` type and a `BoundedQuantity` type behave. It adds no type
@@ -62,7 +62,7 @@ identity and no value; both belong to QExact.
    number of `Option`, `Collection` and `Map` links, including
    `Option<Map<Text, Float64>>`. The metered form charges and reserves for a
    `Map` link exactly as for a `Collection` link.
-2. **Map is not refused for IEEE content.** `quire-semantic-value` SHALL NOT
+2. **Map is not refused for IEEE content.** `filament-semantic-value` SHALL NOT
    refuse in its declaration type-refusal walk a `Map` whose value type contains `Float32` or `Float64`.
    The existing refusal of IEEE content under `Set`, `Bag` and other
    non-`Sequence` collection kinds exists because those kinds deduplicate,
@@ -72,12 +72,12 @@ identity and no value; both belong to QExact.
    type. A `Set` or `Bag` whose element is a map over floats remains refused,
    because its element `contains_ieee` (Behavior 1) and the existing rule
    applies to the collection, not to the map.
-3. **Map in the declaration type-refusal walk.** `quire-semantic-value` SHALL,
+3. **Map in the declaration type-refusal walk.** `filament-semantic-value` SHALL,
    in its type-refusal walk, plain and metered, push a `Map` link's value type and apply every refusal to
    it that it applies inside `Option` and `Collection`: a `Population` inside a
    map's value type is refused `OperatorIneligible`; an unknown `Composite` is
    refused `UnknownDeclaration`; a `Reference` whose target is not a model
-   object type is refused `Type(TypeMismatch)`. `quire-semantic-value` SHALL give the plain and
+   object type is refused `Type(TypeMismatch)`. `filament-semantic-value` SHALL give the plain and
    metered walks the same cause and the same first cause.
 4. **Map in the union-link and cycle-edge walks.** The union-member position
    walk SHALL descend a `Map` link to its value type, charging one unit per
@@ -97,7 +97,7 @@ identity and no value; both belong to QExact.
    leaf that has no nested type, is not IEEE, is never refused, and adds no
    edge, exactly as `Quantity(U)`. A unit named by a `BoundedQuantity` is not
    resolved by these walks.
-6. **Equality-conversion admission.** `quire-semantic-value` SHALL make
+6. **Equality-conversion admission.** `filament-semantic-value` SHALL make
    `integer_source_admits` return `false` when the target is `Map` or
    `BoundedQuantity`, so an `Int` source is never convertible to either.
    `admits_equality_conversion` SHALL read a `BoundedQuantity` source over `U`
@@ -186,7 +186,7 @@ identity and no value; both belong to QExact.
     bounds. The supplied-membership form of that comparison is Behavior 12.
 12. **Retained bounded-quantity type-link comparison.** For a compared pair
     of retained links of which either is a `BoundedQuantity`,
-    `quire-semantic-value` SHALL, under the caller's authenticated finite
+    `filament-semantic-value` SHALL, under the caller's authenticated finite
     magnitude ceiling `B` and original `Cancel` of
     [FR-117](./FR-117-bound-retained-numeric-type-links.md), proceed in this
     order and no other. (a) It requests exactly one `TypeLinkComparison` event
@@ -244,8 +244,8 @@ identity and no value; both belong to QExact.
 
 ## Dependencies
 
-- Types: [QExact FR-386](ix://agent-ix/quire-exact/FR-386) and
-  [QExact FR-387](ix://agent-ix/quire-exact/FR-387) own the type identity,
+- Types: [QExact FR-386](ix://agent-ix/filament-exact/FR-386) and
+  [QExact FR-387](ix://agent-ix/filament-exact/FR-387) own the type identity,
   construction and kernel `admits` of the two variants.
 - Source of the package declarations: QSpec FR-154 (map `values`,
   `Quantity<u>[min, max]`), QSpec FR-153 (population binding contexts) and
@@ -255,7 +255,7 @@ identity and no value; both belong to QExact.
   [FR-117](./FR-117-bound-retained-numeric-type-links.md) own the supplied
   traversal, union topology and numeric type-link rules that Behavior 9 extends
   to the new links.
-- [QExact FR-381](ix://agent-ix/quire-exact/FR-381) is the model for Behavior
+- [QExact FR-381](ix://agent-ix/filament-exact/FR-381) is the model for Behavior
   12. QExact exposes no helper for quantity bounds, so Behavior 12 composes the
   public `Rational` part-bit measure and exact equality, which are finite under
   `B`; an FR-381-style kernel helper for quantity bounds is a welcome
@@ -263,7 +263,7 @@ identity and no value; both belong to QExact.
 - QSpec FR-149 and FR-154 (the refinement read of a bounded quantity by
   conversion, comparison and equality, and the closed quantity conversion row)
   own Behaviors 6 and 10; QSpec states no map equality relation, so the map
-  refusal in Behavior 10 is QSV's decision pending a QSpec ruling.
+  refusal in Behavior 10 is FSV's decision pending a QSpec ruling.
 - The falsifying controls are
   [TC-927](../test-cases/TC-927-map-and-bounded-quantity-in-declaration-admission-and-membership.md).
 

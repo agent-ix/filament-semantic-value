@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! QSpec FR-142 quantities: exact arithmetic under normalized dimensions, explicit
 //! affine conversion through the canonical root and the named `unit.*`
-//! charges of `quire.value.accounting/v1`.
+//! charges of `filament.value.accounting/v1`.
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -12,16 +12,18 @@ use core::cmp::Ordering;
 use crate::semantic_node::IdentityRefusal;
 use crate::stop::{outcome_from_stop, Stop};
 use crate::unit::{CompoundUnit, Dimension, NominalUnitNode, Unit, UnitEdge, UnitGraph};
-use quire_exact::{rational_arithmetic_bits, Rational, RationalArithmetic};
-use quire_exact::{sbits, sdigits, DecimalLoss, DecimalResult, DecimalType, Placed, RoundingMode};
-use quire_exact::{
+use filament_exact::{rational_arithmetic_bits, Rational, RationalArithmetic};
+use filament_exact::{
+    sbits, sdigits, DecimalLoss, DecimalResult, DecimalType, Placed, RoundingMode,
+};
+use filament_exact::{
     BoundedInteger, Charge, ChargePoint, Integer, IntegerInterval, LimitKind, Meter, Quantity,
     RationalDomain, UnitId,
 };
-use quire_exact::{
+use filament_exact::{
     CheckedInvariantCause, InexactTarget, Outcome, QuantityCarrier, Refusal, Undefined,
 };
-use quire_exact::{ComparisonOperator, IllTyped, IllTypedCause};
+use filament_exact::{ComparisonOperator, IllTyped, IllTypedCause};
 
 /// The unit of a quantity: an admitted declared unit or a compound unit
 /// produced by multiplication, division or power.
@@ -29,7 +31,7 @@ use quire_exact::{ComparisonOperator, IllTyped, IllTypedCause};
 pub enum QuantityUnit {
     /// An admitted declared unit.
     Declared(Box<Unit>),
-    /// An evaluator-owned `quire.value.compound-unit/v1` unit over canonical
+    /// An evaluator-owned `filament.value.compound-unit/v1` unit over canonical
     /// roots.
     Compound(CompoundUnit),
 }
@@ -135,13 +137,13 @@ impl IdentifiedUnit {
 /// reads its operands through a table (the unit graph stays in
 /// this crate). A table read from an admitted graph also holds each
 /// admitted dimension's and unit's nominal preimage bytes, which lowering
-/// builds their nodes from (QSL FR-094).
+/// builds their nodes from (FSL FR-094).
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct UnitTable {
     units: BTreeMap<UnitId, QuantityUnit>,
     /// Each admitted dimension and unit node as lowering builds it, by its
     /// structural key.
-    nominal: BTreeMap<quire_exact::NodeKey, NominalUnitNode>,
+    nominal: BTreeMap<filament_exact::NodeKey, NominalUnitNode>,
 }
 
 impl UnitTable {
@@ -200,8 +202,8 @@ impl UnitTable {
     }
 
     /// The admitted dimension or unit node named by the structural key
-    /// `id`, as lowering builds it (QSL FR-094).
-    pub fn nominal_node(&self, id: &quire_exact::NodeKey) -> Option<&NominalUnitNode> {
+    /// `id`, as lowering builds it (FSL FR-094).
+    pub fn nominal_node(&self, id: &filament_exact::NodeKey) -> Option<&NominalUnitNode> {
         self.nominal.get(id)
     }
 
@@ -260,7 +262,7 @@ impl<'a> UnitScope<'a> {
         id
     }
 
-    /// Every unit this stage formed. QSL FR-094: the check stage keeps them
+    /// Every unit this stage formed. FSL FR-094: the check stage keeps them
     /// until lowering has keyed each compound unit's type node.
     pub fn into_formed(self) -> UnitTable {
         self.formed
@@ -420,7 +422,7 @@ pub enum HandoffRefusal {
     Identity(#[from] IdentityRefusal),
 }
 
-/// Evaluate a quantity operation under `quire.value.accounting/v1`. The
+/// Evaluate a quantity operation under `filament.value.accounting/v1`. The
 /// result carries the id of its unit: the operand's unit for negation, the
 /// operands' identical unit for `+` and `-`, otherwise the canonical compound
 /// unit. Incompatible dimensions, affine-unit arithmetic and distinct units
@@ -460,7 +462,7 @@ pub enum QuantityRefusal {
     /// The operation is ill-typed and consumed nothing.
     #[error(transparent)]
     IllTyped(#[from] IllTyped),
-    /// The result's compound unit has no id (QSL FR-259 Behavior 4).
+    /// The result's compound unit has no id (FSL FR-259 Behavior 4).
     #[error(transparent)]
     Identity(#[from] IdentityRefusal),
 }
@@ -517,7 +519,7 @@ pub fn convert_quantity(
 }
 
 /// Compare two quantities of the identical unit under
-/// `quire.value.accounting/v1` by their exact values mapped to the canonical
+/// `filament.value.accounting/v1` by their exact values mapped to the canonical
 /// root, so affine units and negative composed scales compare by root value.
 /// Operands of different dimensions or units are ill-typed and consume
 /// nothing.
@@ -956,7 +958,7 @@ fn place(
     meter: &mut Meter,
 ) -> Result<Placed, Stop> {
     // An integer target's strict-`exact` refusal names the declared
-    // `Int[..]`, not the scale-zero placement type (QSL FR-096).
+    // `Int[..]`, not the scale-zero placement type (FSL FR-096).
     let refuse = |refusal: Refusal| match refusal {
         Refusal::InexactDecimal { target } => match inexact_conversion {
             Some(target) => Stop::Refused(Refusal::InexactConversion {
@@ -1008,8 +1010,8 @@ fn compare(
 mod checked_invariant_tests {
     use super::*;
     use crate::unit::{DimensionNode, NominalDeclaration, UnitNode};
+    use filament_exact::ScalarLimits;
     use ix_trace_rs::trace;
-    use quire_exact::ScalarLimits;
 
     fn test_meter() -> Meter {
         Meter::new(ScalarLimits {

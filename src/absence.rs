@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-//! The authored `absent` keyword of a `lookup` operation (QSL FR-400).
+//! The authored `absent` keyword of a `lookup` operation (FSL FR-400).
 //!
 //! This value is shared by parsed forms and checked terms. It records the
 //! authored keyword independently of the lookup's result.

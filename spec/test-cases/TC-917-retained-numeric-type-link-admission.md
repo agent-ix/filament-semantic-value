@@ -4,7 +4,7 @@ title: "Supplied numeric type links retain event order and rooted failure"
 type: TC
 org: agent-ix
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-117
+  - target: ix://agent-ix/filament-semantic-value/FR-117
     type: verifies
 ---
 # TC-917: Supplied numeric type links retain event order and rooted failure
@@ -12,7 +12,7 @@ relationships:
 ## Description
 
 Verify [FR-117](../functional/FR-117-bound-retained-numeric-type-links.md)
-through QSV's real supplied-membership path after the authentic caller `B`
+through FSV's real supplied-membership path after the authentic caller `B`
 carrier and QExact bounded retained-type equality helper are available.
 
 ## Test Procedure
@@ -38,11 +38,11 @@ carrier and QExact bounded retained-type equality helper are available.
    event, with no following step or result. Exercise a genuinely reachable
    kernel size conversion or allocation denial if one exists and inspect its
    typed request at the same locus. Observe that evaluator charges do not move.
-4. Repeat a paired numeric link without a configured B at QSV's direct API. Assert one
+4. Repeat a paired numeric link without a configured B at FSV's direct API. Assert one
    permitted type-link event then `UnsupportedHelper::NumericDomain`, with no
    equality work. Deny that event and cancel at its boundary separately to
    verify established work/cancellation precedence.
-5. Inspect the production QSV call path for the distinct QExact retained-type
+5. Inspect the production FSV call path for the distinct QExact retained-type
    helper, original operands, B and cancellation handle. Reject a direct
    `left == right` fallback or a second implementation of the limb comparison.
 
@@ -56,5 +56,5 @@ admission escapes.
 
 ## Status
 
-PLANNED/UNRUN; QSL's authentic carrier and QExact retained-type helper are
+PLANNED/UNRUN; FSL's authentic carrier and QExact retained-type helper are
 prerequisites for runtime acceptance.

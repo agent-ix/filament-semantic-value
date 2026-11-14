@@ -3,14 +3,14 @@ id: TC-911
 title: "Native String scalar and composite admission"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-112
+  - target: ix://agent-ix/filament-semantic-value/FR-112
     type: verifies
 ---
 # TC-911: Native String scalar and composite admission
 
 ## Description
 
-Verify [FR-112](../functional/FR-112-admit-native-string-leaves.md) at QSV's
+Verify [FR-112](../functional/FR-112-admit-native-string-leaves.md) at FSV's
 type-environment boundary for scalar equality and a declared record member.
 
 ## Test Procedure

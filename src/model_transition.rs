@@ -3,7 +3,7 @@
 //!
 //! A transition carries the declaration identity text of one operation, its
 //! optional receiver and the ordered arguments it was applied to, each already
-//! one canonical RFC 8785 document in QSL's typed canonical form. The crate
+//! one canonical RFC 8785 document in FSL's typed canonical form. The crate
 //! interprets none of them (FR-060): it checks that each text is canonical,
 //! yields the transition identity of QSpec FR-181 as RFC 8785 bytes, encodes
 //! itself through [`quire_canonical::Encode`] and orders by those bytes.

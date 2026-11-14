@@ -2,21 +2,21 @@
 //! The per-step simulation record a refinement's `requirements` hook writes
 //! ([`StepSimulationRecord`]) and the obligation it states ([`StepObligation`]).
 //!
-//! QSL's compiler writes the records and CG reads them, so the values live
-//! here, below both (QSL ADR-018 LA-5). The crate interprets none of them
+//! FSL's compiler writes the records and CG reads them, so the values live
+//! here, below both (FSL ADR-018 LA-5). The crate interprets none of them
 //! (FR-060): the refinement and hypothesis keys are minted by the caller, and
 //! a [`StepRowRef`] only names a row by its position.
 
 use alloc::vec::Vec;
 
+use filament_exact::NodeKey;
 use quire_canonical::{Encode, Error, Sink, Writer};
-use quire_exact::NodeKey;
 
 /// One step row of a refinement declaration, named by its zero-based position
 /// in the declaration node's `steps` order, which is declaration order
-/// (QSpec FR-375; QSL FR-135 `steps`). No sort of any kind applies.
+/// (QSpec FR-375; FSL FR-135 `steps`). No sort of any kind applies.
 ///
-/// A refinement has exactly one row per concrete step class (QSL ADR-020
+/// A refinement has exactly one row per concrete step class (FSL ADR-020
 /// RM-5), so a refinement key and a row position name one row.
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct StepRowRef(u32);
@@ -41,7 +41,7 @@ impl Encode for StepRowRef {
     }
 }
 
-/// What one per-step simulation record states (QSL ADR-020 RE-2).
+/// What one per-step simulation record states (FSL ADR-020 RE-2).
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum StepObligation {
     /// RS-2: the abstract image of every concrete initial state is an abstract
@@ -75,7 +75,7 @@ impl Encode for StepObligation {
 /// assume; the `Initial` obligation carries them as well as every `Step`.
 ///
 /// Equality, hashing and order are field-wise. `hypotheses` keeps the order
-/// supplied: QSV neither sorts nor deduplicates it.
+/// supplied: FSV neither sorts nor deduplicates it.
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct StepSimulationRecord {
     /// The refinement node the record is for.
@@ -126,9 +126,9 @@ mod tests {
     use std::vec;
     use std::vec::Vec;
 
+    use filament_exact::NodeKey;
     use ix_trace_rs::trace;
     use quire_canonical::{to_vec, Error, Limits};
-    use quire_exact::NodeKey;
 
     use super::{StepObligation, StepRowRef, StepSimulationRecord};
 
@@ -218,10 +218,10 @@ mod tests {
     fn canonical_bytes_are_exact_for_each_obligation() {
         let limits = Limits::new(4096);
         let initial = StepSimulationRecord::new(key(0), StepObligation::Initial, Vec::new());
-        let expected = br#"{"hypotheses":[],"obligation":{"kind":"initial"},"refinement":"qsv-test:[\"00000000000000000000\",]:0"}"#;
+        let expected = br#"{"hypotheses":[],"obligation":{"kind":"initial"},"refinement":"fsv-test:[\"00000000000000000000\",]:0"}"#;
         assert_eq!(to_vec(&initial, limits).expect("initial record"), expected);
         let stepped = StepSimulationRecord::new(key(0xab), step(6), vec![key(1), key(0xcd)]);
-        let expected = br#"{"hypotheses":["qsv-test:[\"00000000000000000001\",]:0","qsv-test:[\"00000000000000000205\",]:0"],"obligation":{"kind":"step","row":6},"refinement":"qsv-test:[\"00000000000000000171\",]:0"}"#;
+        let expected = br#"{"hypotheses":["fsv-test:[\"00000000000000000001\",]:0","fsv-test:[\"00000000000000000205\",]:0"],"obligation":{"kind":"step","row":6},"refinement":"fsv-test:[\"00000000000000000171\",]:0"}"#;
         assert_eq!(to_vec(&stepped, limits).expect("step record"), expected);
         assert_eq!(
             to_vec(&StepObligation::Initial, limits).expect("obligation"),

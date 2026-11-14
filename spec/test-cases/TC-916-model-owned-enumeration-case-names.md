@@ -3,7 +3,7 @@ id: TC-916
 title: "Model-owned enumerations accept any non-empty case name"
 type: TC
 relationships:
-  - target: ix://agent-ix/quire-semantic-value/FR-116
+  - target: ix://agent-ix/filament-semantic-value/FR-116
     type: verifies
 ---
 # TC-916: Model-owned enumerations accept any non-empty case name
