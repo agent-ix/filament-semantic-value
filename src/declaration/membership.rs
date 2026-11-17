@@ -140,7 +140,9 @@ fn leaf_cause(expected: &ValueType, value: &Value) -> InvalidMembershipCause {
         | (ValueType::Decimal(_), Value::Decimal(_)) => InvalidMembershipCause::Payload,
         (ValueType::Float(_), Value::Float(_))
         | (ValueType::Quantity(_), Value::Quantity(_))
-        | (ValueType::Text(_), Value::Text(_)) => InvalidMembershipCause::Type,
+        | (ValueType::Text(_), Value::Text(_))
+        | (ValueType::Bytes, Value::Bytes(_))
+        | (ValueType::JsonObject, Value::JsonObject(_)) => InvalidMembershipCause::Type,
         (ValueType::Enum(_), Value::Enum(_)) => InvalidMembershipCause::Member,
         // A quantity in the bounded type's unit is out of its bounds; one in
         // another unit is a different type.
@@ -180,6 +182,8 @@ fn leaf_cause(expected: &ValueType, value: &Value) -> InvalidMembershipCause {
             | ValueType::Composite(_)
             | ValueType::Collection(_)
             | ValueType::Reference(_)
+            | ValueType::Bytes
+            | ValueType::JsonObject
             | ValueType::Population(_),
             _,
         ) => InvalidMembershipCause::Kind,
@@ -1430,6 +1434,35 @@ mod tests {
 
     fn run(expected: &ValueType, value: &Value) -> Run {
         run_with(expected, value, None, &GlobalReservations)
+    }
+
+    /// Provenance: QSL-2379, QSL-2242
+    #[trace("FR-109-AC-4")]
+    #[test]
+    fn bytes_are_admitted_only_by_their_leaf_type() {
+        let bytes = Value::Bytes(vec![0, 0xff]);
+        assert_eq!(run(&ValueType::Bytes, &bytes).result, Ok(()));
+        let mismatch = run(&ValueType::JsonObject, &bytes);
+        assert_eq!(
+            invalid(&mismatch),
+            (InvalidMembershipCause::Kind, Occurrence, vec![])
+        );
+    }
+
+    #[cfg(feature = "json-object")]
+    /// Provenance: QSL-2379, QSL-2242
+    #[trace("FR-109-AC-4")]
+    #[test]
+    fn json_objects_are_admitted_only_by_their_leaf_type() {
+        let json = Value::JsonObject(
+            filament_exact::JsonObject::from_json_text("{\"a\":1}").expect("valid JSON object"),
+        );
+        assert_eq!(run(&ValueType::JsonObject, &json).result, Ok(()));
+        let mismatch = run(&ValueType::Bytes, &json);
+        assert_eq!(
+            invalid(&mismatch),
+            (InvalidMembershipCause::Kind, Occurrence, vec![])
+        );
     }
 
     fn integer(n: i64) -> Value {
