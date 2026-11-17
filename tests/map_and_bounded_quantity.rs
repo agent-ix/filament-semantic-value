@@ -1089,92 +1089,29 @@ fn typed(value_type: ValueType) -> EqualityOperand {
     EqualityOperand::typed(value_type)
 }
 
-/// A map is never comparable, an equal map pair included, and the refusal
-/// precedes unit resolution and schedule selection.
-#[trace("TC-927", "FR-127-AC-14")]
+/// Equality accepts the same map type and rejects differing keys, values or bounds.
+#[trace("FR-149-AC-28")]
 #[test]
-fn equality_over_a_map_is_operator_ineligible() {
+fn map_equality_requires_the_same_map_type() {
     let table = unit_table();
     let holder = declare(&[map_of(ValueType::Integer, None)]).unwrap();
-    let map = map_of(ValueType::Integer, None);
-    let boolean_map = map_of(ValueType::Boolean, None);
-    let shapes = [
-        map.clone(),
-        ValueType::option(boolean_map.clone()),
-        sequence_of(boolean_map.clone()),
-        map_of(map.clone(), None),
-        ValueType::Composite(key(100)),
-        ValueType::option(ValueType::Composite(key(100))),
-    ];
-    for shape in &shapes {
-        assert_eq!(
-            check(&holder, &table, typed(shape.clone()), typed(shape.clone())).err(),
-            Some(IllTypedCause::OperatorIneligible),
-            "{shape:?}"
-        );
-        // Either side alone.
-        assert_eq!(
-            check(
-                &holder,
-                &table,
-                typed(shape.clone()),
-                typed(ValueType::Boolean)
-            )
-            .err(),
-            Some(IllTypedCause::OperatorIneligible)
-        );
-        assert_eq!(
-            check(
-                &holder,
-                &table,
-                typed(ValueType::Boolean),
-                typed(shape.clone())
-            )
-            .err(),
-            Some(IllTypedCause::OperatorIneligible)
-        );
-    }
-    // A conversion target that holds a map, before the conversion row is read.
-    for target in [
-        map.clone(),
-        ValueType::option(map.clone()),
-        ValueType::Composite(key(100)),
+    let same = map_of(ValueType::Integer, None);
+    assert_eq!(
+        check(&holder, &table, typed(same.clone()), typed(same.clone()))
+            .unwrap()
+            .schedule(),
+        EqualitySchedule::Plan
+    );
+    for different in [
+        map_of(ValueType::Boolean, None),
+        map_of(ValueType::Integer, bound(0, 2)),
+        ValueType::map(MapType::new(ValueType::Integer, ValueType::Integer, None).unwrap()),
     ] {
         assert_eq!(
-            check(
-                &holder,
-                &table,
-                EqualityOperand::converted(
-                    ValueType::Int(IntegerInterval::spanning(integer(0), integer(1))),
-                    target,
-                ),
-                typed(ValueType::Integer),
-            )
-            .err(),
-            Some(IllTypedCause::OperatorIneligible)
+            check(&holder, &table, typed(same.clone()), typed(different)).err(),
+            Some(IllTypedCause::TypeMismatch)
         );
     }
-    // Before unit resolution: the other operand names an unresolved unit.
-    assert_eq!(
-        check(
-            &holder,
-            &table,
-            typed(map.clone()),
-            typed(ValueType::Quantity(unit_x()))
-        )
-        .err(),
-        Some(IllTypedCause::OperatorIneligible)
-    );
-    assert_eq!(
-        check(
-            &holder,
-            &table,
-            typed(bounded(unit_x(), None, None)),
-            typed(map)
-        )
-        .err(),
-        Some(IllTypedCause::OperatorIneligible)
-    );
     // A record without a map is still comparable.
     let plain = environment();
     assert_eq!(

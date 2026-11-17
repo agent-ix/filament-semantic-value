@@ -3009,7 +3009,7 @@ impl TypeEnvironment {
                     right = b.element();
                 }
                 (ValueType::Map(a), ValueType::Map(b)) => {
-                    if a.bound() != b.bound() {
+                    if a.bound() != b.bound() || a.key() != b.key() {
                         return false;
                     }
                     left = a.values();
@@ -3367,58 +3367,6 @@ impl TypeEnvironment {
                 cause: refusal.cause(),
             })),
         }
-    }
-
-    /// Whether `value_type` contains a `Map` link at any depth, through
-    /// record, tuple and union declarations included.
-    fn contains_map(&self, value_type: &ValueType) -> bool {
-        let mut visited = BTreeSet::new();
-        let mut pending = vec![value_type];
-        while let Some(value_type) = pending.pop() {
-            match value_type {
-                ValueType::Map(_) => return true,
-                ValueType::Option(payload) => pending.push(payload),
-                ValueType::Collection(collection) => pending.push(collection.element()),
-                ValueType::Composite(key) => {
-                    if !visited.insert(key) {
-                        continue;
-                    }
-                    match self
-                        .composites
-                        .get(key)
-                        .map(|declaration| &declaration.shape)
-                    {
-                        Some(CompositeShape::Record(fields)) => {
-                            pending.extend(fields.iter().map(FieldDeclaration::value_type));
-                        }
-                        Some(CompositeShape::Tuple(positions)) => pending.extend(positions),
-                        Some(CompositeShape::Union(members)) => {
-                            for member in members {
-                                pending.extend(&member.positions);
-                            }
-                        }
-                        None => {}
-                    }
-                }
-                ValueType::Boolean
-                | ValueType::Integer
-                | ValueType::Int(_)
-                | ValueType::Rational(_)
-                | ValueType::Decimal(_)
-                | ValueType::Float(_)
-                | ValueType::Quantity(_)
-                | ValueType::BoundedQuantity(_)
-                | ValueType::CarriedQuantity(_)
-                | ValueType::Text(_)
-                | ValueType::String
-                | ValueType::Uuid
-                | ValueType::Timestamp
-                | ValueType::Enum(_)
-                | ValueType::Reference(_)
-                | ValueType::Population(_) => {}
-            }
-        }
-        false
     }
 
     /// Whether `value_type` contains `Float32` or `Float64` at any depth,
@@ -5416,15 +5364,6 @@ impl TypeEnvironment {
                 };
                 if let Some(refusal) = refusal {
                     return ill_typed(refusal.cause());
-                }
-            }
-        }
-        // QSpec FR-149 states no map equality relation and the kernel has no
-        // map value, so a map is never comparable, an equal map pair included.
-        for operand in [&left, &right] {
-            for value_type in core::iter::once(&operand.source).chain(operand.target.iter()) {
-                if self.contains_map(value_type) {
-                    return ill_typed(IllTypedCause::OperatorIneligible);
                 }
             }
         }
