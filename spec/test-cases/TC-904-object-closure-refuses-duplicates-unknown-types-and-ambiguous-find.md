@@ -12,7 +12,7 @@ relationships:
 
 Verify the admission rules of `ObjectClosure`.
 
-Scope: FR-106-AC-10, FR-106-AC-11, FR-106-AC-12.
+Scope: FR-106-AC-10, FR-106-AC-11, FR-106-AC-12, FR-106-AC-13, FR-106-AC-14.
 
 ## Test Procedure
 
@@ -31,11 +31,13 @@ Over a type environment with model object types `A` and `B`, each with one requi
 | 9 | an `A` object admitted with `a = 1`, `b = 2` under an environment declaring `A`'s `Integer` attributes `{b, a}`; `attribute` for `a` and `b` under one declaring `{a, b}`, for `c` under one declaring `{a, c}`, and for an object not admitted | `1` for `a`, `2` for `b`; none for `c` and for the unadmitted object; the closure is unequal to one admitting `a = 2`, `b = 1` under `{a, b}` (the same slot values) and equal to one rebuilt under `{b, a}` |
 | 10 | two `A` objects admitted under `{b, a, note?}`, the lower reference without `note`; `iter`, `object(...).get` | `iter` lists the lower reference first, each as `(b, ·), (a, ·), (note, ·)` with the omitted `note` `Absent`; `get("note")` returns the slot, `get("missing")` and `object` of an unadmitted reference none |
 | 11 | an `A` object admitted under own attributes `{b: Integer, a: Boolean, c: Integer}` and supertypes `[P{p: Integer}, Q{q: Integer}]`, read under `{c, a, b}` and supertypes `[Q, P]` | each of `a`, `b`, `c`, `p`, `q` reads its own admitted value |
+| 12 | an attribute holding a `Map` whose key or value holds a reference to an object that is not admitted, with and without that reference tolerated | `DanglingReference` naming it; closes when tolerated |
+| 13 | two `A` objects holding one `Map` with the same entries in different order; a `Float` keyed `Map` `{-0.0: 1}` against `{+0.0: 1}` | the closures are equal in both cases |
 
 ## Expected Results
 
-Rows 1 and 2 refuse with exactly the stated cause, row 3 finds the one object, row 4 finds none, rows 5 and 7 close, and rows 6 and 8 refuse with the stated cause unless tolerated, and rows 9 to 11 read each slot by its attribute name.
+Rows 1 and 2 refuse with exactly the stated cause, row 3 finds the one object, row 4 finds none, rows 5 and 7 close, and rows 6 and 8 refuse with the stated cause unless tolerated, and rows 9 to 11 read each slot by its attribute name, row 12 refuses or closes as in row 8, and row 13 is equal.
 
 ## Status
 
-Implemented. The tests are unit tests in `src/object_closure.rs`, tagged `#[trace("TC-904", ...)]`; rows 5 to 8 bind FR-106-AC-11 and rows 9 to 11 bind FR-106-AC-12.
+Implemented. The tests are unit tests in `src/object_closure.rs`, tagged `#[trace("TC-904", ...)]`; rows 5 to 8 bind FR-106-AC-11 and rows 9 to 11 bind FR-106-AC-12, row 12 binds FR-106-AC-13 and row 13 binds FR-106-AC-14.
