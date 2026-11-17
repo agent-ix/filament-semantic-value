@@ -3008,7 +3008,7 @@ impl TypeEnvironment {
                     right = b.element();
                 }
                 (ValueType::Map(a), ValueType::Map(b)) => {
-                    if a.bound() != b.bound() || a.key() != b.key() {
+                    if a.bound() != b.bound() || !self.same_type(a.key(), b.key()) {
                         return false;
                     }
                     left = a.values();
@@ -3407,6 +3407,58 @@ impl TypeEnvironment {
                 | ValueType::Int(_)
                 | ValueType::Rational(_)
                 | ValueType::Decimal(_)
+                | ValueType::Quantity(_)
+                | ValueType::BoundedQuantity(_)
+                | ValueType::CarriedQuantity(_)
+                | ValueType::Text(_)
+                | ValueType::String
+                | ValueType::Uuid
+                | ValueType::Timestamp
+                | ValueType::Enum(_)
+                | ValueType::Reference(_)
+                | ValueType::Population(_) => {}
+            }
+        }
+        false
+    }
+
+    /// Whether `value_type` contains a `Map` link at any depth, through
+    /// record, tuple and union declarations included.
+    fn contains_map(&self, value_type: &ValueType) -> bool {
+        let mut visited = BTreeSet::new();
+        let mut pending = vec![value_type];
+        while let Some(value_type) = pending.pop() {
+            match value_type {
+                ValueType::Map(_) => return true,
+                ValueType::Option(payload) => pending.push(payload),
+                ValueType::Collection(collection) => pending.push(collection.element()),
+                ValueType::Composite(key) => {
+                    if !visited.insert(key) {
+                        continue;
+                    }
+                    match self
+                        .composites
+                        .get(key)
+                        .map(|declaration| &declaration.shape)
+                    {
+                        Some(CompositeShape::Record(fields)) => {
+                            pending.extend(fields.iter().map(FieldDeclaration::value_type));
+                        }
+                        Some(CompositeShape::Tuple(positions)) => pending.extend(positions),
+                        Some(CompositeShape::Union(members)) => {
+                            for member in members {
+                                pending.extend(&member.positions);
+                            }
+                        }
+                        None => {}
+                    }
+                }
+                ValueType::Boolean
+                | ValueType::Integer
+                | ValueType::Int(_)
+                | ValueType::Rational(_)
+                | ValueType::Decimal(_)
+                | ValueType::Float(_)
                 | ValueType::Quantity(_)
                 | ValueType::BoundedQuantity(_)
                 | ValueType::CarriedQuantity(_)

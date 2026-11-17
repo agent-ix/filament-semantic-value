@@ -228,24 +228,24 @@ fn ieee_containment_descends_map_links_in_both_walks() {
     let plain = declare(&[map_of(ValueType::Integer, None)]).unwrap();
     assert!(!plain.contains_ieee(&ValueType::Composite(key(100))));
 
-    // The metered charge for a map link equals that for a collection link.
+    // A map link has the same base charge as a collection link. A keyed
+    // collection also checks whether a map element contains float values,
+    // because those members retain bit-identity semantics.
     let inner = ValueType::option(ValueType::option(ValueType::Integer));
-    for wrap in [
-        ValueType::option as fn(ValueType) -> ValueType,
-        set_of,
-        sequence_of,
-    ] {
+    for wrap in [ValueType::option as fn(ValueType) -> ValueType, sequence_of] {
         let through_map = union_spent(wrap(map_of(inner.clone(), None)));
         let through_sequence = union_spent(wrap(sequence_of(inner.clone())));
         let leaf_only = union_spent(wrap(inner.clone()));
         assert_eq!(through_map, through_sequence);
         assert!(through_map > leaf_only);
     }
-    // And the budget boundary falls on the same unit.
+    let through_map = union_spent(set_of(map_of(inner.clone(), None)));
+    let through_sequence = union_spent(set_of(sequence_of(inner.clone())));
+    assert!(through_map > through_sequence);
+    // The budget boundary follows the additional keyed-map inspection.
     let element = set_of(map_of(inner.clone(), None));
     let spent = union_spent(element.clone());
-    let sequence_spent = union_spent(set_of(sequence_of(inner)));
-    assert_eq!(spent, sequence_spent);
+    assert_eq!(spent, through_map);
     let declarations = support()
         .into_iter()
         .chain([sealed_union_with_position(element)]);
@@ -1125,6 +1125,22 @@ fn map_equality_requires_the_same_map_type() {
         .schedule(),
         EqualitySchedule::Plan
     );
+
+    let sealed = sealed_environment(vec![]);
+    let union_handle = ValueType::Composite(key(1));
+    let union_key = ValueType::Composite(key(40));
+    let map_with_key = |key| ValueType::map(MapType::new(key, ValueType::Integer, None).unwrap());
+    assert_eq!(
+        check(
+            &sealed,
+            &table,
+            typed(map_with_key(union_handle)),
+            typed(map_with_key(union_key))
+        )
+        .unwrap()
+        .schedule(),
+        EqualitySchedule::Plan
+    );
 }
 
 // --------------------------------------------------------------- AC-15
@@ -1606,6 +1622,11 @@ fn runtime_type_and_same_type_descend_map_links() {
     assert!(!sealed.same_type(
         &map_of(handle.clone(), None),
         &map_of(ValueType::Boolean, None)
+    ));
+    let map_with_key = |key| ValueType::map(MapType::new(key, ValueType::Integer, None).unwrap());
+    assert!(sealed.same_type(
+        &map_with_key(handle.clone()),
+        &map_with_key(final_key.clone())
     ));
     assert!(!sealed.same_type(&map_of(handle.clone(), None), &sequence_of(handle.clone())));
     assert!(!sealed.same_type(
