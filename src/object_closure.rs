@@ -271,6 +271,8 @@ impl ObjectClosure {
                 | Value::String(_)
                 | Value::Uuid(_)
                 | Value::Timestamp(_)
+                | Value::Bytes(_)
+                | Value::JsonObject(_)
                 | Value::Enum(_)
                 | Value::Population(_) => {}
                 Value::Map(map) => {
@@ -395,6 +397,8 @@ fn same_slots(left: &[FieldValue], right: &[FieldValue]) -> bool {
                 }
                 (Value::Map(_), Value::Map(_)) => same_map_value(a, b),
                 (Value::Reference(a), Value::Reference(b)) => a == b,
+                (Value::Bytes(a), Value::Bytes(b)) => a == b,
+                (Value::JsonObject(a), Value::JsonObject(b)) => a == b,
                 (Value::Boolean(_), _)
                 | (Value::Integer(_), _)
                 | (Value::Rational(_), _)
@@ -412,7 +416,9 @@ fn same_slots(left: &[FieldValue], right: &[FieldValue]) -> bool {
                 | (Value::Union(_), _)
                 | (Value::Collection(_), _)
                 | (Value::Map(_), _)
-                | (Value::Reference(_), _) => false,
+                | (Value::Reference(_), _)
+                | (Value::Bytes(_), _)
+                | (Value::JsonObject(_), _) => false,
             },
         };
         if !equal {
@@ -636,6 +642,79 @@ mod tests {
                 }
             );
         }
+    }
+
+    /// Provenance: QSL-2379, QSL-2242
+    #[trace("TC-904", "FR-106-AC-12")]
+    #[test]
+    fn byte_attributes_are_closed_and_compared_structurally() {
+        let native_type = object_type(4);
+        let types = TypeEnvironment::new(
+            [],
+            [ObjectTypeDeclaration::new(
+                native_type,
+                "Native",
+                vec![FieldDeclaration::new(
+                    "bytes",
+                    ValueType::Bytes,
+                    Presence::Required,
+                )],
+            )],
+        )
+        .expect("byte leaves admit as declarations");
+        let owner = reference(4, "native");
+        let closure = |bytes| {
+            ObjectClosure::new(
+                &types,
+                [(
+                    owner.clone(),
+                    vec![("bytes", FieldValue::Present(Value::Bytes(bytes)))],
+                )],
+                &[],
+            )
+            .expect("native values close without referenced objects")
+        };
+
+        assert_eq!(closure(vec![0, 0xff]), closure(vec![0, 0xff]));
+        assert_ne!(closure(vec![0]), closure(vec![1]));
+    }
+
+    #[cfg(feature = "json-object")]
+    /// Provenance: QSL-2379, QSL-2242
+    #[trace("TC-904", "FR-106-AC-12")]
+    #[test]
+    fn json_object_attributes_are_closed_and_compared_canonically() {
+        let native_type = object_type(4);
+        let types = TypeEnvironment::new(
+            [],
+            [ObjectTypeDeclaration::new(
+                native_type,
+                "Native",
+                vec![FieldDeclaration::new(
+                    "json",
+                    ValueType::JsonObject,
+                    Presence::Required,
+                )],
+            )],
+        )
+        .expect("JSON object leaf admits as a declaration");
+        let owner = reference(4, "native");
+        let json = |source| {
+            Value::JsonObject(
+                filament_exact::JsonObject::from_json_text(source).expect("valid JSON object"),
+            )
+        };
+        let closure = |json| {
+            ObjectClosure::new(
+                &types,
+                [(owner.clone(), vec![("json", FieldValue::Present(json))])],
+                &[],
+            )
+            .expect("JSON object value closes without referenced objects")
+        };
+
+        assert_eq!(closure(json("{\"a\":1}")), closure(json("{ \"a\" : 1 }")));
+        assert_ne!(closure(json("{\"a\":1}")), closure(json("{\"a\":2}")));
     }
 
     /// A reference in a map value contributes to the object's closure.

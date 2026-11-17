@@ -2651,6 +2651,8 @@ impl TypeEnvironment {
                                 | ValueType::BoundedQuantity(_)
                                 | ValueType::CarriedQuantity(_)
                                 | ValueType::Text(_)
+                                | ValueType::Bytes
+                                | ValueType::JsonObject
                                 | ValueType::Uuid
                                 | ValueType::Timestamp
                                 | ValueType::String
@@ -3058,6 +3060,8 @@ impl TypeEnvironment {
                 | ValueType::BoundedQuantity(_)
                 | ValueType::CarriedQuantity(_)
                 | ValueType::Text(_)
+                | ValueType::Bytes
+                | ValueType::JsonObject
                 | ValueType::String
                 | ValueType::Uuid
                 | ValueType::Timestamp
@@ -3105,6 +3109,8 @@ impl TypeEnvironment {
                 | ValueType::BoundedQuantity(_)
                 | ValueType::CarriedQuantity(_)
                 | ValueType::Text(_)
+                | ValueType::Bytes
+                | ValueType::JsonObject
                 | ValueType::String
                 | ValueType::Uuid
                 | ValueType::Timestamp
@@ -3411,6 +3417,8 @@ impl TypeEnvironment {
                 | ValueType::BoundedQuantity(_)
                 | ValueType::CarriedQuantity(_)
                 | ValueType::Text(_)
+                | ValueType::Bytes
+                | ValueType::JsonObject
                 | ValueType::String
                 | ValueType::Uuid
                 | ValueType::Timestamp
@@ -3488,6 +3496,8 @@ impl TypeEnvironment {
                 | ValueType::BoundedQuantity(_)
                 | ValueType::CarriedQuantity(_)
                 | ValueType::Text(_)
+                | ValueType::Bytes
+                | ValueType::JsonObject
                 | ValueType::String
                 | ValueType::Uuid
                 | ValueType::Timestamp
@@ -3563,6 +3573,8 @@ impl TypeEnvironment {
                 | ValueType::BoundedQuantity(_)
                 | ValueType::CarriedQuantity(_)
                 | ValueType::Text(_)
+                | ValueType::Bytes
+                | ValueType::JsonObject
                 | ValueType::String
                 | ValueType::Uuid
                 | ValueType::Timestamp
@@ -3635,6 +3647,8 @@ impl TypeEnvironment {
                 | ValueType::BoundedQuantity(_)
                 | ValueType::CarriedQuantity(_)
                 | ValueType::Text(_)
+                | ValueType::Bytes
+                | ValueType::JsonObject
                 | ValueType::String
                 | ValueType::Uuid
                 | ValueType::Timestamp
@@ -3808,6 +3822,8 @@ impl TypeEnvironment {
                     | ValueType::BoundedQuantity(_)
                     | ValueType::CarriedQuantity(_)
                     | ValueType::Text(_)
+                    | ValueType::Bytes
+                    | ValueType::JsonObject
                     | ValueType::String
                     | ValueType::Uuid
                     | ValueType::Timestamp
@@ -5678,6 +5694,8 @@ fn top_level_unit(value_type: &ValueType) -> Option<UnitId> {
         | ValueType::Decimal(_)
         | ValueType::Float(_)
         | ValueType::Text(_)
+        | ValueType::Bytes
+        | ValueType::JsonObject
         | ValueType::String
         | ValueType::Uuid
         | ValueType::Timestamp
@@ -5706,6 +5724,8 @@ fn bounded_read(value_type: &ValueType) -> Option<ValueType> {
         | ValueType::Quantity(_)
         | ValueType::CarriedQuantity(_)
         | ValueType::Text(_)
+        | ValueType::Bytes
+        | ValueType::JsonObject
         | ValueType::String
         | ValueType::Uuid
         | ValueType::Timestamp
@@ -5811,6 +5831,8 @@ fn integer_source_admits(lower: &Integer, upper: &Integer, target: &ValueType) -
         | ValueType::BoundedQuantity(_)
         | ValueType::CarriedQuantity(_)
         | ValueType::Text(_)
+        | ValueType::Bytes
+        | ValueType::JsonObject
         | ValueType::String
         | ValueType::Uuid
         | ValueType::Timestamp
