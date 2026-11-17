@@ -702,6 +702,37 @@ mod tests {
         );
     }
 
+    /// TC-904 row 14: the first dangling reference in walk order is in the
+    /// canonical-first `Map` entry, whatever order the entries were inserted.
+    #[trace("TC-904", "FR-106-AC-13")]
+    #[test]
+    fn a_map_is_walked_in_canonical_key_order() {
+        let ref_type = ValueType::Reference(object_type(B));
+        let types = map_field_types(ValueType::Integer, ref_type.clone());
+        let owner = reference(A, "owner");
+        let (r9, r10) = (reference(B, "r9"), reference(B, "r10"));
+        let map = from_admitted_map(
+            MapType::new(ValueType::Integer, ref_type, None).expect("leaf keys admit"),
+            vec![
+                (Value::Integer(10_i64.into()), Value::Reference(r10)),
+                (Value::Integer(9_i64.into()), Value::Reference(r9.clone())),
+            ],
+        )
+        .expect("map entries admit");
+        assert_eq!(
+            ObjectClosure::new(
+                &types,
+                [(owner.clone(), vec![("x", FieldValue::Present(map))])],
+                &[],
+            )
+            .expect_err("the map holds dangling references"),
+            ObjectClosureRefusal {
+                object: Box::new(owner),
+                cause: ObjectClosureCause::DanglingReference(Box::new(r9)),
+            }
+        );
+    }
+
     /// Map entry order does not change the value identity of an object.
     #[trace("TC-904", "FR-106-AC-12", "FR-106-AC-14")]
     #[test]
