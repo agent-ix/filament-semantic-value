@@ -92,7 +92,7 @@ dependencies = [
 
 [[package]]
 name = "filament-semantic-value"
-version = "0.1.3"
+version = "0.1.5"
 dependencies = [
  "allocation-counter",
  "filament-exact",
