@@ -89,7 +89,7 @@ dependencies = [
 
 [[package]]
 name = "filament-semantic-value"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "allocation-counter",
  "filament-exact",
@@ -115,8 +115,8 @@ dependencies = [
 
 [[package]]
 name = "ix-trace-rs"
-version = "0.1.0"
-source = "git+https://github.com/agent-ix/ix-trace-rs?branch=main#9378a67762a9871fbad0179028185bb8785a825b"
+version = "0.1.2"
+source = "git+https://github.com/agent-ix/ix-trace-rs?tag=v0.1.2#e29cc07f70394ff018884d12406c1e150bded5f4"
 
 [[package]]
 name = "libc"
@@ -169,8 +169,8 @@ dependencies = [
 
 [[package]]
 name = "quire-canonical"
-version = "0.3.0"
-source = "git+https://github.com/agent-ix/quire-canonical?branch=main#5dc4e12db63b8fae647825b4e4b78df9b6dcadfe"
+version = "0.3.1"
+source = "git+https://github.com/agent-ix/quire-canonical?tag=v0.3.1#2204c5c3fc0ca13dd655400d94e923edd2e8416c"
 dependencies = [
  "quire-canonical-derive",
  "ryu-js",
@@ -182,7 +182,7 @@ dependencies = [
 [[package]]
 name = "quire-canonical-derive"
 version = "0.3.0"
-source = "git+https://github.com/agent-ix/quire-canonical?branch=main#5dc4e12db63b8fae647825b4e4b78df9b6dcadfe"
+source = "git+https://github.com/agent-ix/quire-canonical?tag=v0.3.1#2204c5c3fc0ca13dd655400d94e923edd2e8416c"
 dependencies = [
  "proc-macro2",
  "quote",
