@@ -232,6 +232,70 @@ fn float_equality_admission_and_string_text_cause_follow_fr149() {
     );
 }
 
+/// FR-149-AC-25: runtime equality applies `numericEqual` at a nested float leaf.
+#[trace("FSpec-TC-194", "FSpec-FR-149-AC-25")]
+#[test]
+fn nested_float_record_equality_evaluates_numeric_leaves() {
+    use filament_exact::{FieldValue, FloatType, IeeeValue, IeeeWidth, Presence};
+    use filament_semantic_value::declaration::FieldDeclaration;
+
+    let record_key = common::node(202);
+    let float = ValueType::Float(FloatType::exact(IeeeWidth::Binary64));
+    let environment = TypeEnvironment::new(
+        [CompositeDeclaration::new(
+            record_key.clone(),
+            "FloatRecord",
+            CompositeShape::Record(vec![FieldDeclaration::new(
+                "value",
+                float,
+                Presence::Required,
+            )]),
+        )],
+        [],
+    )
+    .expect("float-bearing record is admitted");
+    let record_type = ValueType::Composite(record_key.clone());
+    let equality = environment
+        .check_equality(
+            EqualityOperator::Equal,
+            EqualityOperand::typed(record_type.clone()),
+            EqualityOperand::typed(record_type),
+            &EnumMemberIndex::default(),
+        )
+        .expect("nested float equality is admitted");
+    let record = |bits| {
+        environment
+            .record(
+                record_key.clone(),
+                vec![(
+                    "value",
+                    FieldValue::Present(Value::Float(IeeeValue::binary64(bits))),
+                )],
+            )
+            .expect("record float field is admitted")
+    };
+
+    assert_eq!(
+        equality.evaluate(
+            &environment,
+            &record(0),
+            &record(0x8000_0000_0000_0000),
+            &mut meter(10_000),
+        ),
+        Outcome::Completed(true)
+    );
+    let nan = 0x7ff8_0000_0000_0000;
+    assert_eq!(
+        equality.evaluate(
+            &environment,
+            &record(nan),
+            &record(nan),
+            &mut meter(10_000),
+        ),
+        Outcome::Completed(false)
+    );
+}
+
 fn text(value: &str, ty: &TextType) -> Value {
     match filament_exact::admit_text(
         &TextPayload::from_utf8(value.as_bytes()).unwrap(),
