@@ -27,7 +27,10 @@ use alloc::vec::Vec;
 
 use crate::declaration::{fill_slots, ConstructionRefusal, FieldRef, TypeEnvironment};
 use crate::relationship_extent::{ManifestOutcome, Resolution};
-use filament_exact::{EffectiveId, FieldValue, ObjectReference, UniverseId, Value};
+use filament_exact::{
+    planned_equality, EffectiveId, FieldValue, Meter, ObjectReference, Outcome, ScalarLimits,
+    UniverseId, Value,
+};
 
 /// Why an object closure does not close.
 ///
@@ -270,6 +273,9 @@ impl ObjectClosure {
                 | Value::Timestamp(_)
                 | Value::Enum(_)
                 | Value::Population(_) => {}
+                Value::Map(map) => {
+                    pending.extend(map.entries().iter().flat_map(|(key, value)| [key, value]))
+                }
             }
         }
         Ok(())
@@ -387,6 +393,7 @@ fn same_slots(left: &[FieldValue], right: &[FieldValue]) -> bool {
                     a.collection_type() == b.collection_type()
                         && queue_values(&mut pending, a.elements(), b.elements())
                 }
+                (Value::Map(_), Value::Map(_)) => same_map_value(a, b),
                 (Value::Reference(a), Value::Reference(b)) => a == b,
                 (Value::Boolean(_), _)
                 | (Value::Integer(_), _)
@@ -404,6 +411,7 @@ fn same_slots(left: &[FieldValue], right: &[FieldValue]) -> bool {
                 | (Value::Composite(_), _)
                 | (Value::Union(_), _)
                 | (Value::Collection(_), _)
+                | (Value::Map(_), _)
                 | (Value::Reference(_), _) => false,
             },
         };
@@ -412,6 +420,26 @@ fn same_slots(left: &[FieldValue], right: &[FieldValue]) -> bool {
         }
     }
     true
+}
+
+/// Compare maps with the kernel's order-independent relation.
+fn same_map_value(left: &Value, right: &Value) -> bool {
+    let mut meter = Meter::new(ScalarLimits {
+        integer_bits: u64::MAX,
+        decimal_digits: u64::MAX,
+        scale_expansion: u64::MAX,
+        text_input_bytes: u64::MAX,
+        text_scalars: u64::MAX,
+        normalized_scalars: u64::MAX,
+        unit_edges: u64::MAX,
+        value_occurrences: u64::MAX,
+        work_units: u64::MAX,
+        result_units: u64::MAX,
+    });
+    matches!(
+        planned_equality(left, right, &mut meter),
+        Outcome::Completed(true)
+    )
 }
 
 fn present(slots: &[FieldValue]) -> impl Iterator<Item = &Value> {
@@ -428,7 +456,9 @@ mod tests {
         Component, ConstructionCause, FieldDeclaration, ObjectTypeDeclaration,
     };
     use alloc::vec;
-    use filament_exact::{EffectiveId, ObjectId, Presence, Timestamp, Uuid, ValueType};
+    use filament_exact::{
+        from_admitted_map, EffectiveId, MapType, ObjectId, Presence, Timestamp, Uuid, ValueType,
+    };
     use ix_trace_rs::trace;
 
     #[allow(
@@ -474,6 +504,31 @@ mod tests {
             reference.clone(),
             vec![("x", FieldValue::Present(Value::Integer(1_i64.into())))],
         )
+    }
+
+    /// A map-valued field environment with the supplied value type.
+    fn map_field_types(key: ValueType, values: ValueType) -> TypeEnvironment {
+        let map_type = ValueType::map(MapType::new(key, values, None).expect("leaf keys admit"));
+        TypeEnvironment::new(
+            [],
+            [
+                ObjectTypeDeclaration::new(
+                    object_type(A),
+                    "A",
+                    vec![FieldDeclaration::new("x", map_type, Presence::Required)],
+                ),
+                ObjectTypeDeclaration::new(
+                    object_type(B),
+                    "B",
+                    vec![FieldDeclaration::new(
+                        "x",
+                        ValueType::Integer,
+                        Presence::Required,
+                    )],
+                ),
+            ],
+        )
+        .expect("one map-valued object type admits")
     }
 
     /// TC-904 row 1: a second object with an admitted identity triple
@@ -580,6 +635,102 @@ mod tests {
                 }
             );
         }
+    }
+
+    /// A reference in a map value contributes to the object's closure.
+    #[trace("TC-904", "FR-106-AC-11")]
+    #[test]
+    fn a_map_value_with_a_dangling_reference_refuses() {
+        let types = map_field_types(ValueType::String, ValueType::Reference(object_type(B)));
+        let owner = reference(A, "owner");
+        let missing = reference(B, "missing");
+        let map = from_admitted_map(
+            MapType::new(
+                ValueType::String,
+                ValueType::Reference(object_type(B)),
+                None,
+            )
+            .expect("leaf string keys admit"),
+            vec![(
+                Value::String("target".into()),
+                Value::Reference(missing.clone()),
+            )],
+        )
+        .expect("map entries admit");
+
+        assert_eq!(
+            ObjectClosure::new(
+                &types,
+                [(owner.clone(), vec![("x", FieldValue::Present(map))])],
+                &[],
+            )
+            .expect_err("the map contains a dangling reference"),
+            ObjectClosureRefusal {
+                object: Box::new(owner),
+                cause: ObjectClosureCause::DanglingReference(Box::new(missing)),
+            }
+        );
+
+        let key_types = map_field_types(ValueType::Reference(object_type(B)), ValueType::Integer);
+        let missing_key = reference(B, "missing-key");
+        let key_map = from_admitted_map(
+            MapType::new(
+                ValueType::Reference(object_type(B)),
+                ValueType::Integer,
+                None,
+            )
+            .expect("reference keys are leaf keys"),
+            vec![(
+                Value::Reference(missing_key.clone()),
+                Value::Integer(1_i64.into()),
+            )],
+        )
+        .expect("reference-key map admits");
+        let key_owner = reference(A, "key-owner");
+        assert_eq!(
+            ObjectClosure::new(
+                &key_types,
+                [(key_owner.clone(), vec![("x", FieldValue::Present(key_map))])],
+                &[],
+            )
+            .expect_err("the map key is a dangling reference"),
+            ObjectClosureRefusal {
+                object: Box::new(key_owner),
+                cause: ObjectClosureCause::DanglingReference(Box::new(missing_key)),
+            }
+        );
+    }
+
+    /// Map entry order does not change the value identity of an object.
+    #[trace("TC-904", "FR-106-AC-12")]
+    #[test]
+    fn map_entry_order_does_not_change_object_closure_equality() {
+        let types = map_field_types(ValueType::String, ValueType::Integer);
+        let owner = reference(A, "owner");
+        let map_type = || {
+            MapType::new(ValueType::String, ValueType::Integer, None)
+                .expect("leaf string keys admit")
+        };
+        let map =
+            |entries| from_admitted_map(map_type(), entries).expect("integer map entries admit");
+        let first = map(vec![
+            (Value::String("a".into()), Value::Integer(1_i64.into())),
+            (Value::String("b".into()), Value::Integer(2_i64.into())),
+        ]);
+        let reversed = map(vec![
+            (Value::String("b".into()), Value::Integer(2_i64.into())),
+            (Value::String("a".into()), Value::Integer(1_i64.into())),
+        ]);
+        let closure = |value| {
+            ObjectClosure::new(
+                &types,
+                [(owner.clone(), vec![("x", FieldValue::Present(value))])],
+                &[],
+            )
+            .expect("map-valued object closes")
+        };
+
+        assert_eq!(closure(first), closure(reversed));
     }
 
     /// Object type `A` declared with integer attributes in `order`, an
