@@ -290,7 +290,7 @@ fn duplicate_names_keys_foreign_bindings_and_unknown_types_refuse() {
 /// Trace: FR-323-AC-3
 #[trace("FR-323-AC-3")]
 #[test]
-fn unused_ieee_member_denies_all_keyed_kinds_but_sequence_admits() {
+fn unused_ieee_member_is_admitted_for_keyed_collection_elements() {
     let env = TypeEnvironment::new(
         [CompositeDeclaration::new(
             key(1),
@@ -315,19 +315,13 @@ fn unused_ieee_member_denies_all_keyed_kinds_but_sequence_admits() {
         CollectionKind::Bag,
         CollectionKind::OrderedSet,
     ] {
-        assert_eq!(
-            env.try_check_type(&ValueType::collection(CollectionType::new(
+        assert!(env
+            .try_check_type(&ValueType::collection(CollectionType::new(
                 kind,
                 ValueType::Composite(key(1)),
                 None,
             )))
-            .unwrap_err(),
-            filament_semantic_value::declaration::TypeCheckError::Refused(
-                filament_exact::IllTyped {
-                    cause: IllTypedCause::OperatorIneligible
-                }
-            )
-        );
+            .is_ok());
     }
     assert_eq!(
         env.try_check_type(&ValueType::collection(CollectionType::new(

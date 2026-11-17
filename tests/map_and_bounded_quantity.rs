@@ -228,24 +228,24 @@ fn ieee_containment_descends_map_links_in_both_walks() {
     let plain = declare(&[map_of(ValueType::Integer, None)]).unwrap();
     assert!(!plain.contains_ieee(&ValueType::Composite(key(100))));
 
-    // The metered charge for a map link equals that for a collection link.
+    // A map link has the same base charge as a collection link. A keyed
+    // collection also checks whether a map element contains float values,
+    // because those members retain bit-identity semantics.
     let inner = ValueType::option(ValueType::option(ValueType::Integer));
-    for wrap in [
-        ValueType::option as fn(ValueType) -> ValueType,
-        set_of,
-        sequence_of,
-    ] {
+    for wrap in [ValueType::option as fn(ValueType) -> ValueType, sequence_of] {
         let through_map = union_spent(wrap(map_of(inner.clone(), None)));
         let through_sequence = union_spent(wrap(sequence_of(inner.clone())));
         let leaf_only = union_spent(wrap(inner.clone()));
         assert_eq!(through_map, through_sequence);
         assert!(through_map > leaf_only);
     }
-    // And the budget boundary falls on the same unit.
+    let through_map = union_spent(set_of(map_of(inner.clone(), None)));
+    let through_sequence = union_spent(set_of(sequence_of(inner.clone())));
+    assert!(through_map > through_sequence);
+    // The budget boundary follows the additional keyed-map inspection.
     let element = set_of(map_of(inner.clone(), None));
     let spent = union_spent(element.clone());
-    let sequence_spent = union_spent(set_of(sequence_of(inner)));
-    assert_eq!(spent, sequence_spent);
+    assert_eq!(spent, through_map);
     let declarations = support()
         .into_iter()
         .chain([sealed_union_with_position(element)]);
@@ -1089,92 +1089,29 @@ fn typed(value_type: ValueType) -> EqualityOperand {
     EqualityOperand::typed(value_type)
 }
 
-/// A map is never comparable, an equal map pair included, and the refusal
-/// precedes unit resolution and schedule selection.
-#[trace("TC-927", "FR-127-AC-14")]
+/// Equality accepts the same map type and rejects differing keys, values or bounds.
+#[trace("FR-149-AC-28")]
 #[test]
-fn equality_over_a_map_is_operator_ineligible() {
+fn map_equality_requires_the_same_map_type() {
     let table = unit_table();
     let holder = declare(&[map_of(ValueType::Integer, None)]).unwrap();
-    let map = map_of(ValueType::Integer, None);
-    let boolean_map = map_of(ValueType::Boolean, None);
-    let shapes = [
-        map.clone(),
-        ValueType::option(boolean_map.clone()),
-        sequence_of(boolean_map.clone()),
-        map_of(map.clone(), None),
-        ValueType::Composite(key(100)),
-        ValueType::option(ValueType::Composite(key(100))),
-    ];
-    for shape in &shapes {
-        assert_eq!(
-            check(&holder, &table, typed(shape.clone()), typed(shape.clone())).err(),
-            Some(IllTypedCause::OperatorIneligible),
-            "{shape:?}"
-        );
-        // Either side alone.
-        assert_eq!(
-            check(
-                &holder,
-                &table,
-                typed(shape.clone()),
-                typed(ValueType::Boolean)
-            )
-            .err(),
-            Some(IllTypedCause::OperatorIneligible)
-        );
-        assert_eq!(
-            check(
-                &holder,
-                &table,
-                typed(ValueType::Boolean),
-                typed(shape.clone())
-            )
-            .err(),
-            Some(IllTypedCause::OperatorIneligible)
-        );
-    }
-    // A conversion target that holds a map, before the conversion row is read.
-    for target in [
-        map.clone(),
-        ValueType::option(map.clone()),
-        ValueType::Composite(key(100)),
+    let same = map_of(ValueType::Integer, None);
+    assert_eq!(
+        check(&holder, &table, typed(same.clone()), typed(same.clone()))
+            .unwrap()
+            .schedule(),
+        EqualitySchedule::Plan
+    );
+    for different in [
+        map_of(ValueType::Boolean, None),
+        map_of(ValueType::Integer, bound(0, 2)),
+        ValueType::map(MapType::new(ValueType::Integer, ValueType::Integer, None).unwrap()),
     ] {
         assert_eq!(
-            check(
-                &holder,
-                &table,
-                EqualityOperand::converted(
-                    ValueType::Int(IntegerInterval::spanning(integer(0), integer(1))),
-                    target,
-                ),
-                typed(ValueType::Integer),
-            )
-            .err(),
-            Some(IllTypedCause::OperatorIneligible)
+            check(&holder, &table, typed(same.clone()), typed(different)).err(),
+            Some(IllTypedCause::TypeMismatch)
         );
     }
-    // Before unit resolution: the other operand names an unresolved unit.
-    assert_eq!(
-        check(
-            &holder,
-            &table,
-            typed(map.clone()),
-            typed(ValueType::Quantity(unit_x()))
-        )
-        .err(),
-        Some(IllTypedCause::OperatorIneligible)
-    );
-    assert_eq!(
-        check(
-            &holder,
-            &table,
-            typed(bounded(unit_x(), None, None)),
-            typed(map)
-        )
-        .err(),
-        Some(IllTypedCause::OperatorIneligible)
-    );
     // A record without a map is still comparable.
     let plain = environment();
     assert_eq!(
@@ -1183,6 +1120,22 @@ fn equality_over_a_map_is_operator_ineligible() {
             &table,
             typed(ValueType::Composite(key(1))),
             typed(ValueType::Composite(key(1)))
+        )
+        .unwrap()
+        .schedule(),
+        EqualitySchedule::Plan
+    );
+
+    let sealed = sealed_environment(vec![]);
+    let union_handle = ValueType::Composite(key(1));
+    let union_key = ValueType::Composite(key(40));
+    let map_with_key = |key| ValueType::map(MapType::new(key, ValueType::Integer, None).unwrap());
+    assert_eq!(
+        check(
+            &sealed,
+            &table,
+            typed(map_with_key(union_handle)),
+            typed(map_with_key(union_key))
         )
         .unwrap()
         .schedule(),
@@ -1669,6 +1622,11 @@ fn runtime_type_and_same_type_descend_map_links() {
     assert!(!sealed.same_type(
         &map_of(handle.clone(), None),
         &map_of(ValueType::Boolean, None)
+    ));
+    let map_with_key = |key| ValueType::map(MapType::new(key, ValueType::Integer, None).unwrap());
+    assert!(sealed.same_type(
+        &map_with_key(handle.clone()),
+        &map_with_key(final_key.clone())
     ));
     assert!(!sealed.same_type(&map_of(handle.clone(), None), &sequence_of(handle.clone())));
     assert!(!sealed.same_type(

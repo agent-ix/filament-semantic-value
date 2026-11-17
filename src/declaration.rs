@@ -2346,8 +2346,7 @@ pub enum DeclarationCause {
     /// object type of the package.
     UnknownObjectType(EffectiveId),
     /// A member type is ill-typed: a `Reference<T>` target that is not an
-    /// admitted model object type (`type-mismatch`), or an IEEE-bearing set,
-    /// bag or ordered-set element type (`operator-ineligible`).
+    /// admitted model object type (`type-mismatch`).
     Type(IllTypedCause),
     /// The recursion rule refuses this cycle of declaration names, whose first
     /// and last entries are the same declaration.
@@ -3009,7 +3008,7 @@ impl TypeEnvironment {
                     right = b.element();
                 }
                 (ValueType::Map(a), ValueType::Map(b)) => {
-                    if a.bound() != b.bound() {
+                    if a.bound() != b.bound() || !self.same_type(a.key(), b.key()) {
                         return false;
                     }
                     left = a.values();
@@ -3369,58 +3368,6 @@ impl TypeEnvironment {
         }
     }
 
-    /// Whether `value_type` contains a `Map` link at any depth, through
-    /// record, tuple and union declarations included.
-    fn contains_map(&self, value_type: &ValueType) -> bool {
-        let mut visited = BTreeSet::new();
-        let mut pending = vec![value_type];
-        while let Some(value_type) = pending.pop() {
-            match value_type {
-                ValueType::Map(_) => return true,
-                ValueType::Option(payload) => pending.push(payload),
-                ValueType::Collection(collection) => pending.push(collection.element()),
-                ValueType::Composite(key) => {
-                    if !visited.insert(key) {
-                        continue;
-                    }
-                    match self
-                        .composites
-                        .get(key)
-                        .map(|declaration| &declaration.shape)
-                    {
-                        Some(CompositeShape::Record(fields)) => {
-                            pending.extend(fields.iter().map(FieldDeclaration::value_type));
-                        }
-                        Some(CompositeShape::Tuple(positions)) => pending.extend(positions),
-                        Some(CompositeShape::Union(members)) => {
-                            for member in members {
-                                pending.extend(&member.positions);
-                            }
-                        }
-                        None => {}
-                    }
-                }
-                ValueType::Boolean
-                | ValueType::Integer
-                | ValueType::Int(_)
-                | ValueType::Rational(_)
-                | ValueType::Decimal(_)
-                | ValueType::Float(_)
-                | ValueType::Quantity(_)
-                | ValueType::BoundedQuantity(_)
-                | ValueType::CarriedQuantity(_)
-                | ValueType::Text(_)
-                | ValueType::String
-                | ValueType::Uuid
-                | ValueType::Timestamp
-                | ValueType::Enum(_)
-                | ValueType::Reference(_)
-                | ValueType::Population(_) => {}
-            }
-        }
-        false
-    }
-
     /// Whether `value_type` contains `Float32` or `Float64` at any depth,
     /// through record and tuple declarations included.
     pub fn contains_ieee(&self, value_type: &ValueType) -> bool {
@@ -3473,6 +3420,83 @@ impl TypeEnvironment {
             }
         }
         false
+    }
+
+    /// Whether `value_type` contains a `Map` link at any depth, through
+    /// record, tuple and union declarations included.
+    fn contains_map_walk<S: TypeWalkStorage<E>, E>(
+        &self,
+        value_type: &ValueType,
+        charge: &mut impl FnMut(usize) -> Result<(), E>,
+        storage: &S,
+    ) -> Result<bool, E> {
+        let mut visited: OrderedIndex<&NodeKey, ()> = OrderedIndex::default();
+        charge(1)?;
+        let mut pending = Vec::new();
+        storage.push(&mut pending, value_type)?;
+        let mut first = true;
+        while let Some(value_type) = pending.pop() {
+            if !first {
+                charge(1)?;
+            }
+            first = false;
+            match value_type {
+                ValueType::Map(_) => return Ok(true),
+                ValueType::Option(payload) => storage.push(&mut pending, payload)?,
+                ValueType::Collection(collection) => {
+                    storage.push(&mut pending, collection.element())?;
+                }
+                ValueType::Composite(key) => {
+                    if visited.contains_key(&key) {
+                        continue;
+                    }
+                    visited.insert_with(key, (), |entries| storage.reserve(entries, 1))?;
+                    match self
+                        .composites
+                        .get(key)
+                        .map(|declaration| &declaration.shape)
+                    {
+                        Some(CompositeShape::Record(fields)) => {
+                            for field in fields {
+                                storage.push(&mut pending, field.value_type())?;
+                            }
+                        }
+                        Some(CompositeShape::Tuple(positions)) => {
+                            for position in positions {
+                                storage.push(&mut pending, position)?;
+                            }
+                        }
+                        Some(CompositeShape::Union(members)) => {
+                            for member in members {
+                                charge(1)?;
+                                charge(member.positions.len())?;
+                                for position in &member.positions {
+                                    storage.push(&mut pending, position)?;
+                                }
+                            }
+                        }
+                        None => {}
+                    }
+                }
+                ValueType::Boolean
+                | ValueType::Integer
+                | ValueType::Int(_)
+                | ValueType::Rational(_)
+                | ValueType::Decimal(_)
+                | ValueType::Float(_)
+                | ValueType::Quantity(_)
+                | ValueType::BoundedQuantity(_)
+                | ValueType::CarriedQuantity(_)
+                | ValueType::Text(_)
+                | ValueType::String
+                | ValueType::Uuid
+                | ValueType::Timestamp
+                | ValueType::Enum(_)
+                | ValueType::Reference(_)
+                | ValueType::Population(_) => {}
+            }
+        }
+        Ok(false)
     }
 
     fn contains_ieee_walk<S: TypeWalkStorage<E>, E>(
@@ -3593,6 +3617,7 @@ impl TypeEnvironment {
                 ValueType::Option(payload) => storage.push(&mut pending, payload)?,
                 ValueType::Collection(collection) => {
                     if collection.kind() != CollectionKind::Sequence
+                        && self.contains_map_walk(collection.element(), charge, storage)?
                         && self.contains_ieee_walk(collection.element(), charge, storage)?
                     {
                         return Ok(Some(TypeRefusal::Type(IllTypedCause::OperatorIneligible)));
@@ -5333,6 +5358,8 @@ impl EqualityOperand {
 /// The schedule QSpec FR-149 selects from the common type.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum EqualitySchedule {
+    /// A top-level IEEE pair: the FR-148 `numericEqual` schedule.
+    Float,
     /// A top-level text pair: the QSpec FR-141 text schedule.
     Text,
     /// A top-level enumeration pair: `enum.*`.
@@ -5419,15 +5446,6 @@ impl TypeEnvironment {
                 }
             }
         }
-        // QSpec FR-149 states no map equality relation and the kernel has no
-        // map value, so a map is never comparable, an equal map pair included.
-        for operand in [&left, &right] {
-            for value_type in core::iter::once(&operand.source).chain(operand.target.iter()) {
-                if self.contains_map(value_type) {
-                    return ill_typed(IllTypedCause::OperatorIneligible);
-                }
-            }
-        }
         let resolve = |operand: EqualityOperand| -> Option<EqualityOperand> {
             Some(EqualityOperand {
                 source: self.runtime_type(&operand.source)?,
@@ -5464,19 +5482,22 @@ impl TypeEnvironment {
             }
         }
         let (left_type, right_type) = (left.comparison_type(), right.comparison_type());
-        if self.contains_ieee(left_type) || self.contains_ieee(right_type) {
-            return ill_typed(IllTypedCause::OperatorIneligible);
-        }
         // QSpec FR-154: a top-level bounded quantity is read as `Quantity<u>`
         // by comparison and equality; the bounds play no part.
         let (left_read, right_read) = (bounded_read(left_type), bounded_read(right_type));
         let left_type = left_read.as_ref().unwrap_or(left_type);
         let right_type = right_read.as_ref().unwrap_or(right_type);
         let schedule = match (left_type, right_type) {
+            (ValueType::Float(left), ValueType::Float(right)) if left == right => {
+                EqualitySchedule::Float
+            }
             (ValueType::Text(l), ValueType::Text(r)) if l.profile() != r.profile() => {
                 return ill_typed(IllTypedCause::DistinctTextProfiles)
             }
             (ValueType::Text(_), ValueType::Text(_)) => EqualitySchedule::Text,
+            (ValueType::String, ValueType::Text(_)) | (ValueType::Text(_), ValueType::String) => {
+                return ill_typed(IllTypedCause::OperatorIneligible)
+            }
             (ValueType::Enum(l), ValueType::Enum(r)) if l != r => {
                 return ill_typed(IllTypedCause::DistinctEnumDeclarations)
             }
@@ -5582,6 +5603,22 @@ impl CheckedEquality {
         let right = operand_value(types, &self.right, right, &units, meter)?;
         let operator = self.operator.comparison();
         let scheduled = match (self.schedule, &left, &right) {
+            (EqualitySchedule::Float, Value::Float(l), Value::Float(r)) => {
+                let numeric = outcome_into_stop(
+                    filament_exact::compare_ieee(
+                        filament_exact::IeeeComparison::NumericEqual,
+                        *l,
+                        *r,
+                        meter,
+                    )
+                    .map_err(|error| {
+                        invariant(CheckedInvariantCause::ScheduledComparisonRefused {
+                            cause: error.cause,
+                        })
+                    })?,
+                )?;
+                return Ok(numeric == (self.operator == EqualityOperator::Equal));
+            }
             (EqualitySchedule::Text, Value::Text(l), Value::Text(r)) => {
                 compare_text(operator, l, r, meter)
             }
@@ -5610,7 +5647,10 @@ impl CheckedEquality {
                 return Ok(equal == (self.operator == EqualityOperator::Equal));
             }
             (
-                EqualitySchedule::Text | EqualitySchedule::Enum | EqualitySchedule::Quantity,
+                EqualitySchedule::Float
+                | EqualitySchedule::Text
+                | EqualitySchedule::Enum
+                | EqualitySchedule::Quantity,
                 _,
                 _,
             ) => return Err(invariant(CheckedInvariantCause::EqualityScheduleMismatch)),
