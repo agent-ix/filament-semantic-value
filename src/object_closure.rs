@@ -675,7 +675,13 @@ mod tests {
             .expect("native values close without referenced objects")
         };
 
-        assert_eq!(closure(vec![0, 0xff]), closure(vec![0, 0xff]));
+        let bytes = vec![0, 0xff];
+        let admitted = closure(bytes.clone());
+        assert!(matches!(
+            admitted.attribute(&types, &owner, &FieldRef::new(object_type(4), "bytes")),
+            Some(FieldValue::Present(Value::Bytes(actual))) if actual == &bytes
+        ));
+        assert_eq!(admitted, closure(bytes.clone()));
         assert_ne!(closure(vec![0]), closure(vec![1]));
     }
 
@@ -713,7 +719,13 @@ mod tests {
             .expect("JSON object value closes without referenced objects")
         };
 
-        assert_eq!(closure(json("{\"a\":1}")), closure(json("{ \"a\" : 1 }")));
+        let admitted = closure(json("{\"a\":1}"));
+        assert!(matches!(
+            admitted.attribute(&types, &owner, &FieldRef::new(object_type(4), "json")),
+            Some(FieldValue::Present(Value::JsonObject(actual)))
+                if actual.canonical_text() == "{\"a\":1}"
+        ));
+        assert_eq!(admitted, closure(json("{ \"a\" : 1 }")));
         assert_ne!(closure(json("{\"a\":1}")), closure(json("{\"a\":2}")));
     }
 
