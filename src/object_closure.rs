@@ -457,7 +457,8 @@ mod tests {
     };
     use alloc::vec;
     use filament_exact::{
-        from_admitted_map, EffectiveId, MapType, ObjectId, Presence, Timestamp, Uuid, ValueType,
+        from_admitted_map, EffectiveId, FloatType, IeeeValue, IeeeWidth, MapType, ObjectId,
+        Presence, Timestamp, Uuid, ValueType,
     };
     use ix_trace_rs::trace;
 
@@ -638,7 +639,7 @@ mod tests {
     }
 
     /// A reference in a map value contributes to the object's closure.
-    #[trace("TC-904", "FR-106-AC-11")]
+    #[trace("TC-904", "FR-106-AC-11", "FR-106-AC-13")]
     #[test]
     fn a_map_value_with_a_dangling_reference_refuses() {
         let types = map_field_types(ValueType::String, ValueType::Reference(object_type(B)));
@@ -702,7 +703,7 @@ mod tests {
     }
 
     /// Map entry order does not change the value identity of an object.
-    #[trace("TC-904", "FR-106-AC-12")]
+    #[trace("TC-904", "FR-106-AC-12", "FR-106-AC-14")]
     #[test]
     fn map_entry_order_does_not_change_object_closure_equality() {
         let types = map_field_types(ValueType::String, ValueType::Integer);
@@ -731,6 +732,72 @@ mod tests {
         };
 
         assert_eq!(closure(first), closure(reversed));
+    }
+
+    /// A float key is compared by numeric equality, so `-0.0` and `+0.0`
+    /// name one key.
+    #[trace("TC-904", "FR-106-AC-14")]
+    #[test]
+    fn float_map_keys_compare_by_numeric_equality_in_closure_equality() {
+        let float = FloatType::exact(IeeeWidth::Binary64);
+        let types = map_field_types(ValueType::Float(float), ValueType::Integer);
+        let owner = reference(A, "owner");
+        let map_type = || {
+            MapType::new(ValueType::Float(float), ValueType::Integer, None)
+                .expect("float keys admit")
+        };
+        let map = |bits: u64| {
+            from_admitted_map(
+                map_type(),
+                vec![(
+                    Value::Float(IeeeValue::binary64(bits)),
+                    Value::Integer(1_i64.into()),
+                )],
+            )
+            .expect("float map entries admit")
+        };
+        let closure = |value| {
+            ObjectClosure::new(
+                &types,
+                [(owner.clone(), vec![("x", FieldValue::Present(value))])],
+                &[],
+            )
+            .expect("map-valued object closes")
+        };
+
+        assert_eq!(
+            closure(map(0x8000_0000_0000_0000)),
+            closure(map(0x0000_0000_0000_0000))
+        );
+    }
+
+    /// Maps of different `MapType` are not equal, even when both are empty.
+    #[trace("TC-904", "FR-106-AC-14")]
+    #[test]
+    fn maps_of_different_map_types_are_not_equal_in_closure_equality() {
+        let string_types = map_field_types(ValueType::String, ValueType::Integer);
+        let integer_types = map_field_types(ValueType::Integer, ValueType::Integer);
+        let owner = reference(A, "owner");
+        let empty = |key| {
+            from_admitted_map(
+                MapType::new(key, ValueType::Integer, None).expect("leaf keys admit"),
+                vec![],
+            )
+            .expect("empty map admits")
+        };
+        let closure = |types: &TypeEnvironment, value| {
+            ObjectClosure::new(
+                types,
+                [(owner.clone(), vec![("x", FieldValue::Present(value))])],
+                &[],
+            )
+            .expect("map-valued object closes")
+        };
+
+        assert_ne!(
+            closure(&string_types, empty(ValueType::String)),
+            closure(&integer_types, empty(ValueType::Integer))
+        );
     }
 
     /// Object type `A` declared with integer attributes in `order`, an

@@ -40,4 +40,4 @@ Rows 1 and 2 refuse with exactly the stated cause, row 3 finds the one object, r
 
 ## Status
 
-Implemented. The tests are unit tests in `src/object_closure.rs`, tagged `#[trace("TC-904", ...)]`; rows 5 to 8 bind FR-106-AC-11 and rows 9 to 11 bind FR-106-AC-12, row 12 binds FR-106-AC-13 and row 13 binds FR-106-AC-14.
+Implemented. The tests are unit tests in `src/object_closure.rs`, tagged `#[trace("TC-904", ...)]`; rows 5 to 8 bind FR-106-AC-11 and rows 9 to 11 bind FR-106-AC-12, row 12 binds FR-106-AC-13 and row 13 binds FR-106-AC-14. Row 13 is covered by one test for entry order, one for the float-key case and one for Maps of different `MapType`, which are unequal.
