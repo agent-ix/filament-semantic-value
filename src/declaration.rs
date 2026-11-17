@@ -3424,30 +3424,55 @@ impl TypeEnvironment {
 
     /// Whether `value_type` contains a `Map` link at any depth, through
     /// record, tuple and union declarations included.
-    fn contains_map(&self, value_type: &ValueType) -> bool {
-        let mut visited = BTreeSet::new();
-        let mut pending = vec![value_type];
+    fn contains_map_walk<S: TypeWalkStorage<E>, E>(
+        &self,
+        value_type: &ValueType,
+        charge: &mut impl FnMut(usize) -> Result<(), E>,
+        storage: &S,
+    ) -> Result<bool, E> {
+        let mut visited: OrderedIndex<&NodeKey, ()> = OrderedIndex::default();
+        charge(1)?;
+        let mut pending = Vec::new();
+        storage.push(&mut pending, value_type)?;
+        let mut first = true;
         while let Some(value_type) = pending.pop() {
+            if !first {
+                charge(1)?;
+            }
+            first = false;
             match value_type {
-                ValueType::Map(_) => return true,
-                ValueType::Option(payload) => pending.push(payload),
-                ValueType::Collection(collection) => pending.push(collection.element()),
+                ValueType::Map(_) => return Ok(true),
+                ValueType::Option(payload) => storage.push(&mut pending, payload)?,
+                ValueType::Collection(collection) => {
+                    storage.push(&mut pending, collection.element())?;
+                }
                 ValueType::Composite(key) => {
-                    if !visited.insert(key) {
+                    if visited.contains_key(&key) {
                         continue;
                     }
+                    visited.insert_with(key, (), |entries| storage.reserve(entries, 1))?;
                     match self
                         .composites
                         .get(key)
                         .map(|declaration| &declaration.shape)
                     {
                         Some(CompositeShape::Record(fields)) => {
-                            pending.extend(fields.iter().map(FieldDeclaration::value_type));
+                            for field in fields {
+                                storage.push(&mut pending, field.value_type())?;
+                            }
                         }
-                        Some(CompositeShape::Tuple(positions)) => pending.extend(positions),
+                        Some(CompositeShape::Tuple(positions)) => {
+                            for position in positions {
+                                storage.push(&mut pending, position)?;
+                            }
+                        }
                         Some(CompositeShape::Union(members)) => {
                             for member in members {
-                                pending.extend(&member.positions);
+                                charge(1)?;
+                                charge(member.positions.len())?;
+                                for position in &member.positions {
+                                    storage.push(&mut pending, position)?;
+                                }
                             }
                         }
                         None => {}
@@ -3471,7 +3496,7 @@ impl TypeEnvironment {
                 | ValueType::Population(_) => {}
             }
         }
-        false
+        Ok(false)
     }
 
     fn contains_ieee_walk<S: TypeWalkStorage<E>, E>(
@@ -3592,7 +3617,7 @@ impl TypeEnvironment {
                 ValueType::Option(payload) => storage.push(&mut pending, payload)?,
                 ValueType::Collection(collection) => {
                     if collection.kind() != CollectionKind::Sequence
-                        && self.contains_map(collection.element())
+                        && self.contains_map_walk(collection.element(), charge, storage)?
                         && self.contains_ieee_walk(collection.element(), charge, storage)?
                     {
                         return Ok(Some(TypeRefusal::Type(IllTypedCause::OperatorIneligible)));

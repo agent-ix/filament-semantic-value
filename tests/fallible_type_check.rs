@@ -3,11 +3,12 @@
 mod common;
 
 use filament_exact::{
-    CollectionKind, CollectionType, FloatType, IeeeWidth, IllTyped, IllTypedCause, ValueType,
+    CollectionKind, CollectionType, FloatType, IeeeWidth, IllTyped, IllTypedCause, MapType,
+    Presence, ValueType,
 };
 use filament_semantic_value::declaration::{
-    CompositeDeclaration, CompositeShape, StorageRequest, StorageUnit, TypeCheckError,
-    TypeEnvironment,
+    CompositeDeclaration, CompositeShape, FieldDeclaration, StorageRequest, StorageUnit,
+    TypeCheckError, TypeEnvironment,
 };
 use ix_trace_rs::trace;
 
@@ -69,6 +70,51 @@ fn float_bearing_set_type_is_admitted_and_root_denials_retry() {
         assert_eq!(environment.try_check_type(&ty), oracle);
         assert_eq!(environment, original_environment);
     }
+}
+
+#[trace("TC-929")]
+#[test]
+fn map_link_inspection_propagates_type_walk_allocation_denial() {
+    let float = ValueType::Float(FloatType::exact(IeeeWidth::Binary64));
+    let map = ValueType::map(MapType::new(ValueType::String, float, None).unwrap());
+    let environment = TypeEnvironment::new(
+        [CompositeDeclaration::new(
+            common::node(1),
+            "MapRecord",
+            CompositeShape::Record(vec![FieldDeclaration::new(
+                "value",
+                map,
+                Presence::Required,
+            )]),
+        )],
+        [],
+    )
+    .unwrap();
+    let ty = collection(CollectionKind::Set, ValueType::Composite(common::node(1)));
+
+    // The public checker reserves its root worklist first. Deny the next
+    // reservation, which is the metered walk that searches this composite for
+    // a Map link.
+    fsv_failing_allocator::arm(1);
+    let result = environment.try_check_type(&ty);
+    let denied_bytes = fsv_failing_allocator::disarm();
+
+    assert!(
+        denied_bytes.is_some(),
+        "the Map-link traversal allocation was denied"
+    );
+    assert_eq!(
+        result,
+        Err(TypeCheckError::Allocation(StorageRequest::new(
+            1,
+            StorageUnit::AdditionalElements
+        )))
+    );
+    assert_eq!(
+        environment.try_check_type(&ty),
+        refused(IllTypedCause::OperatorIneligible),
+        "a failed check leaves the environment and retry behavior intact"
+    );
 }
 
 #[trace("TC-929", "FR-132-AC-1")]
