@@ -1,6 +1,6 @@
 [package]
 name = "filament-semantic-value"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.98"
 description = "The shared no_std semantic-value leaf: runtime semantic values over the filament-exact kernel."
@@ -14,7 +14,7 @@ name = "filament_semantic_value"
 path = "src/lib.rs"
 
 [dependencies]
-filament-exact = { git = "https://github.com/agent-ix/filament-exact", branch = "main" }
+filament-exact = { git = "https://github.com/agent-ix/filament-exact", tag = "v0.2.0" }
 # The one RFC 8785 encoder, without `std`, for bounded measurement of
 # structural compound-unit terms.
 quire-canonical = { git = "https://github.com/agent-ix/quire-canonical", branch = "main", default-features = false }
