@@ -134,6 +134,104 @@ fn an_admitted_composite_needs_no_rechecking_environment() {
     );
 }
 
+/// FR-149 admits float-bearing composite equality and collection element
+/// types; unlike `String` and `Text` are refused as operator-ineligible.
+#[trace(
+    "FSpec-TC-194",
+    "FSpec-FR-149-AC-22",
+    "FSpec-FR-149-AC-25",
+    "FSpec-FR-149-AC-26"
+)]
+#[test]
+fn float_equality_admission_and_string_text_cause_follow_fr149() {
+    use filament_exact::{
+        CollectionKind, CollectionType, FloatType, IeeeValue, IeeeWidth, Presence, TextProfile,
+        TextType,
+    };
+
+    let record_key = common::node(201);
+    let float = ValueType::Float(FloatType::exact(IeeeWidth::Binary64));
+    let environment = TypeEnvironment::new(
+        [CompositeDeclaration::new(
+            record_key.clone(),
+            "FloatRecord",
+            CompositeShape::Record(vec![
+                filament_semantic_value::declaration::FieldDeclaration::new(
+                    "value",
+                    float.clone(),
+                    Presence::Required,
+                ),
+            ]),
+        )],
+        [],
+    )
+    .expect("float-bearing records are admitted");
+    let bare_float = environment
+        .check_equality(
+            EqualityOperator::Equal,
+            EqualityOperand::typed(float.clone()),
+            EqualityOperand::typed(float.clone()),
+            &EnumMemberIndex::default(),
+        )
+        .expect("bare float equality uses the FR-148 numeric schedule");
+    assert_eq!(bare_float.schedule(), EqualitySchedule::Float);
+    assert_eq!(
+        bare_float.evaluate(
+            &environment,
+            &Value::Float(IeeeValue::binary64(0)),
+            &Value::Float(IeeeValue::binary64(0x8000_0000_0000_0000)),
+            &mut meter(10_000),
+        ),
+        Outcome::Completed(true)
+    );
+    let nan = Value::Float(IeeeValue::binary64(0x7ff8_0000_0000_0000));
+    assert_eq!(
+        bare_float.evaluate(&environment, &nan, &nan, &mut meter(10_000)),
+        Outcome::Completed(false)
+    );
+    let record = ValueType::Composite(record_key);
+    let equality = environment
+        .check_equality(
+            EqualityOperator::Equal,
+            EqualityOperand::typed(record.clone()),
+            EqualityOperand::typed(record),
+            &EnumMemberIndex::default(),
+        )
+        .expect("float-bearing composite equality is admitted");
+    assert_eq!(equality.schedule(), EqualitySchedule::Plan);
+
+    for kind in [
+        CollectionKind::Set,
+        CollectionKind::Bag,
+        CollectionKind::OrderedSet,
+    ] {
+        let value_type = ValueType::collection(CollectionType::new(kind, float.clone(), None));
+        assert_eq!(environment.try_check_type(&value_type), Ok(()));
+        assert!(environment
+            .check_equality(
+                EqualityOperator::Equal,
+                EqualityOperand::typed(value_type.clone()),
+                EqualityOperand::typed(value_type),
+                &EnumMemberIndex::default(),
+            )
+            .is_ok());
+    }
+
+    let text = ValueType::Text(TextType::new(0, 8, TextProfile::Nfc).unwrap());
+    let mismatch = environment
+        .check_equality(
+            EqualityOperator::Equal,
+            EqualityOperand::typed(ValueType::String),
+            EqualityOperand::typed(text),
+            &EnumMemberIndex::default(),
+        )
+        .unwrap_err();
+    assert_eq!(
+        mismatch.cause,
+        filament_exact::IllTypedCause::OperatorIneligible
+    );
+}
+
 fn text(value: &str, ty: &TextType) -> Value {
     match filament_exact::admit_text(
         &TextPayload::from_utf8(value.as_bytes()).unwrap(),

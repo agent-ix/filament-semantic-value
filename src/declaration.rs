@@ -2346,8 +2346,7 @@ pub enum DeclarationCause {
     /// object type of the package.
     UnknownObjectType(EffectiveId),
     /// A member type is ill-typed: a `Reference<T>` target that is not an
-    /// admitted model object type (`type-mismatch`), or an IEEE-bearing set,
-    /// bag or ordered-set element type (`operator-ineligible`).
+    /// admitted model object type (`type-mismatch`).
     Type(IllTypedCause),
     /// The recursion rule refuses this cycle of declaration names, whose first
     /// and last entries are the same declaration.
@@ -3541,6 +3540,7 @@ impl TypeEnvironment {
                 ValueType::Option(payload) => storage.push(&mut pending, payload)?,
                 ValueType::Collection(collection) => {
                     if collection.kind() != CollectionKind::Sequence
+                        && self.contains_map(collection.element())
                         && self.contains_ieee_walk(collection.element(), charge, storage)?
                     {
                         return Ok(Some(TypeRefusal::Type(IllTypedCause::OperatorIneligible)));
@@ -5281,6 +5281,8 @@ impl EqualityOperand {
 /// The schedule QSpec FR-149 selects from the common type.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum EqualitySchedule {
+    /// A top-level IEEE pair: the FR-148 `numericEqual` schedule.
+    Float,
     /// A top-level text pair: the QSpec FR-141 text schedule.
     Text,
     /// A top-level enumeration pair: `enum.*`.
@@ -5403,19 +5405,22 @@ impl TypeEnvironment {
             }
         }
         let (left_type, right_type) = (left.comparison_type(), right.comparison_type());
-        if self.contains_ieee(left_type) || self.contains_ieee(right_type) {
-            return ill_typed(IllTypedCause::OperatorIneligible);
-        }
         // QSpec FR-154: a top-level bounded quantity is read as `Quantity<u>`
         // by comparison and equality; the bounds play no part.
         let (left_read, right_read) = (bounded_read(left_type), bounded_read(right_type));
         let left_type = left_read.as_ref().unwrap_or(left_type);
         let right_type = right_read.as_ref().unwrap_or(right_type);
         let schedule = match (left_type, right_type) {
+            (ValueType::Float(left), ValueType::Float(right)) if left == right => {
+                EqualitySchedule::Float
+            }
             (ValueType::Text(l), ValueType::Text(r)) if l.profile() != r.profile() => {
                 return ill_typed(IllTypedCause::DistinctTextProfiles)
             }
             (ValueType::Text(_), ValueType::Text(_)) => EqualitySchedule::Text,
+            (ValueType::String, ValueType::Text(_)) | (ValueType::Text(_), ValueType::String) => {
+                return ill_typed(IllTypedCause::OperatorIneligible)
+            }
             (ValueType::Enum(l), ValueType::Enum(r)) if l != r => {
                 return ill_typed(IllTypedCause::DistinctEnumDeclarations)
             }
@@ -5521,6 +5526,22 @@ impl CheckedEquality {
         let right = operand_value(types, &self.right, right, &units, meter)?;
         let operator = self.operator.comparison();
         let scheduled = match (self.schedule, &left, &right) {
+            (EqualitySchedule::Float, Value::Float(l), Value::Float(r)) => {
+                let numeric = outcome_into_stop(
+                    filament_exact::compare_ieee(
+                        filament_exact::IeeeComparison::NumericEqual,
+                        *l,
+                        *r,
+                        meter,
+                    )
+                    .map_err(|error| {
+                        invariant(CheckedInvariantCause::ScheduledComparisonRefused {
+                            cause: error.cause,
+                        })
+                    })?,
+                )?;
+                return Ok(numeric == (self.operator == EqualityOperator::Equal));
+            }
             (EqualitySchedule::Text, Value::Text(l), Value::Text(r)) => {
                 compare_text(operator, l, r, meter)
             }
@@ -5549,7 +5570,10 @@ impl CheckedEquality {
                 return Ok(equal == (self.operator == EqualityOperator::Equal));
             }
             (
-                EqualitySchedule::Text | EqualitySchedule::Enum | EqualitySchedule::Quantity,
+                EqualitySchedule::Float
+                | EqualitySchedule::Text
+                | EqualitySchedule::Enum
+                | EqualitySchedule::Quantity,
                 _,
                 _,
             ) => return Err(invariant(CheckedInvariantCause::EqualityScheduleMismatch)),

@@ -24,7 +24,7 @@ fn refused(cause: IllTypedCause) -> Result<(), TypeCheckError> {
 
 #[trace("TC-929", "FR-132-AC-2", "FR-132-AC-4")]
 #[test]
-fn real_denials_cover_root_ieee_pending_growth_and_visited_then_retry() {
+fn float_bearing_set_type_is_admitted_and_root_denials_retry() {
     let key = common::node(1);
     let environment = TypeEnvironment::new(
         [CompositeDeclaration::new(
@@ -41,33 +41,11 @@ fn real_denials_cover_root_ieee_pending_growth_and_visited_then_retry() {
     .unwrap();
     let original_environment = environment.clone();
     let ty = collection(CollectionKind::Set, ValueType::Composite(key));
-    let original_type = ty.clone();
-    let oracle = refused(IllTypedCause::OperatorIneligible);
-    assert_eq!(environment.try_check_type(&ty), oracle);
-    // Exact reservations allocate: root pointer, IEEE pending pointer, visited
-    // (key pointer, unit), then pending grows from one to two to three pointers.
+    assert!(environment.contains_ieee(&ty));
+    assert_eq!(environment.try_check_type(&ty), Ok(()));
+    // Root type-walk allocation denial leaves the environment unchanged and
+    // the same type succeeds when retried.
     let pointer = core::mem::size_of::<&ValueType>();
-    let visited = core::mem::size_of::<(&filament_exact::NodeKey, ())>();
-    for (successful, expected_bytes) in [pointer, pointer, visited, 2 * pointer, 3 * pointer]
-        .into_iter()
-        .enumerate()
-    {
-        fsv_failing_allocator::arm(successful);
-        let result = environment.try_check_type(&ty);
-        let denied = fsv_failing_allocator::disarm();
-        assert_eq!(denied, Some(expected_bytes), "boundary {successful}");
-        assert_eq!(
-            result,
-            Err(TypeCheckError::Allocation(StorageRequest::new(
-                1,
-                StorageUnit::AdditionalElements,
-            ))),
-            "boundary {successful}",
-        );
-        assert_eq!(environment, original_environment);
-        assert_eq!(ty, original_type);
-        assert_eq!(environment.try_check_type(&ty), oracle);
-    }
     // Success and unknown-key refusal both recover from the root denial; the
     // latter must not clone the unknown structural identity for its error.
     for (ty, oracle) in [
@@ -142,10 +120,7 @@ fn external_semantics_preserve_nested_traversal_and_refusal_priority() {
         CollectionKind::OrderedSet,
     ] {
         let ieee = ValueType::option(ValueType::Float(FloatType::exact(IeeeWidth::Binary64)));
-        assert_eq!(
-            environment.try_check_type(&collection(kind, ieee)),
-            refused(IllTypedCause::OperatorIneligible)
-        );
+        assert_eq!(environment.try_check_type(&collection(kind, ieee)), Ok(()));
         assert_eq!(
             environment.try_check_type(&collection(kind, ValueType::Composite(common::node(9)))),
             refused(IllTypedCause::TypeMismatch)
