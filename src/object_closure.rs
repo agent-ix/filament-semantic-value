@@ -28,8 +28,8 @@ use alloc::vec::Vec;
 use crate::declaration::{fill_slots, ConstructionRefusal, FieldRef, TypeEnvironment};
 use crate::relationship_extent::{ManifestOutcome, Resolution};
 use filament_exact::{
-    planned_equality, EffectiveId, FieldValue, Meter, ObjectReference, Outcome, ScalarLimits,
-    UniverseId, Value,
+    compare_keys, planned_equality, EffectiveId, FieldValue, Meter, ObjectReference, Outcome,
+    ScalarLimits, UniverseId, Value,
 };
 
 /// Why an object closure does not close.
@@ -274,7 +274,18 @@ impl ObjectClosure {
                 | Value::Enum(_)
                 | Value::Population(_) => {}
                 Value::Map(map) => {
-                    pending.extend(map.entries().iter().flat_map(|(key, value)| [key, value]))
+                    // `pending` pops last-in first-out, and entries may be held in
+                    // input order. Push the entries in reverse canonical key order
+                    // (FR-410-AC-7 `compare_keys`), each value before its key, so
+                    // they pop in ascending key order with a key before its value.
+                    let mut entries: Vec<&(Value, Value)> = map.entries().iter().collect();
+                    entries.sort_by(|a, b| {
+                        compare_keys(&a.0, &b.0).unwrap_or(core::cmp::Ordering::Equal)
+                    });
+                    for (key, value) in entries.into_iter().rev() {
+                        pending.push(value);
+                        pending.push(key);
+                    }
                 }
             }
         }
@@ -703,32 +714,58 @@ mod tests {
     }
 
     /// TC-904 row 14: the first dangling reference in walk order is in the
-    /// canonical-first `Map` entry, whatever order the entries were inserted.
+    /// canonical-first `Map` entry whatever order the entries were inserted,
+    /// and within an entry a key's reference is named before its value's.
     #[trace("TC-904", "FR-106-AC-13")]
     #[test]
-    fn a_map_is_walked_in_canonical_key_order() {
+    fn a_map_is_walked_in_canonical_key_order_key_before_value() {
         let ref_type = ValueType::Reference(object_type(B));
         let types = map_field_types(ValueType::Integer, ref_type.clone());
         let owner = reference(A, "owner");
         let (r9, r10) = (reference(B, "r9"), reference(B, "r10"));
+        let entry = |key: i64, target: &ObjectReference| {
+            (Value::Integer(key.into()), Value::Reference(target.clone()))
+        };
+        for entries in [
+            vec![entry(10, &r10), entry(9, &r9)],
+            vec![entry(9, &r9), entry(10, &r10)],
+        ] {
+            let map = from_admitted_map(
+                MapType::new(ValueType::Integer, ref_type.clone(), None).expect("leaf keys admit"),
+                entries,
+            )
+            .expect("map entries admit");
+            assert_eq!(
+                ObjectClosure::new(
+                    &types,
+                    [(owner.clone(), vec![("x", FieldValue::Present(map))])],
+                    &[],
+                )
+                .expect_err("the map holds dangling references"),
+                ObjectClosureRefusal {
+                    object: Box::new(owner.clone()),
+                    cause: ObjectClosureCause::DanglingReference(Box::new(r9.clone())),
+                }
+            );
+        }
+
+        let key_types = map_field_types(ref_type.clone(), ref_type.clone());
+        let (rk, rv) = (reference(B, "rk"), reference(B, "rv"));
         let map = from_admitted_map(
-            MapType::new(ValueType::Integer, ref_type, None).expect("leaf keys admit"),
-            vec![
-                (Value::Integer(10_i64.into()), Value::Reference(r10)),
-                (Value::Integer(9_i64.into()), Value::Reference(r9.clone())),
-            ],
+            MapType::new(ref_type.clone(), ref_type, None).expect("reference keys are leaf keys"),
+            vec![(Value::Reference(rk.clone()), Value::Reference(rv))],
         )
         .expect("map entries admit");
         assert_eq!(
             ObjectClosure::new(
-                &types,
+                &key_types,
                 [(owner.clone(), vec![("x", FieldValue::Present(map))])],
                 &[],
             )
             .expect_err("the map holds dangling references"),
             ObjectClosureRefusal {
                 object: Box::new(owner),
-                cause: ObjectClosureCause::DanglingReference(Box::new(r9)),
+                cause: ObjectClosureCause::DanglingReference(Box::new(rk)),
             }
         );
     }

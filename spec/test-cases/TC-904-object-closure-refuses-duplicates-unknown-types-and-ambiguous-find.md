@@ -33,11 +33,11 @@ Over a type environment with model object types `A` and `B`, each with one requi
 | 11 | an `A` object admitted under own attributes `{b: Integer, a: Boolean, c: Integer}` and supertypes `[P{p: Integer}, Q{q: Integer}]`, read under `{c, a, b}` and supertypes `[Q, P]` | each of `a`, `b`, `c`, `p`, `q` reads its own admitted value |
 | 12 | an attribute holding a `Map` whose key or value holds a reference to an object that is not admitted, with and without that reference tolerated | `DanglingReference` naming it; closes when tolerated |
 | 13 | two `A` objects holding one `Map` with the same entries in different order; a `Float` keyed `Map` `{-0.0: 1}` against `{+0.0: 1}` | the closures are equal in both cases |
-| 14 | an attribute holding a `Map` with `Integer` keys `10` then `9` inserted in that order, each value holding a different dangling reference | `DanglingReference` naming the reference under key `9`, the canonical-first entry |
+| 14 | an attribute holding a `Map` with `Integer` keys `9` and `10`, each value holding a different dangling reference, inserted `10` first and again `9` first; and a `Map` with one `Reference`-keyed entry whose key and value hold different dangling references | `DanglingReference` naming the reference under key `9` for both insertion orders; and naming the key's reference, before the value's |
 
 ## Expected Results
 
-Rows 1 and 2 refuse with exactly the stated cause, row 3 finds the one object, row 4 finds none, rows 5 and 7 close, and rows 6 and 8 refuse with the stated cause unless tolerated, and rows 9 to 11 read each slot by its attribute name, row 12 refuses or closes as in row 8, and row 13 is equal, and row 14 names the reference under key 9.
+Rows 1 and 2 refuse with exactly the stated cause, row 3 finds the one object, row 4 finds none, rows 5 and 7 close, and rows 6 and 8 refuse with the stated cause unless tolerated, and rows 9 to 11 read each slot by its attribute name, row 12 refuses or closes as in row 8, and row 13 is equal, and row 14 names the reference under key 9 whatever the insertion order, and a key's reference before its value's.
 
 ## Status
 
