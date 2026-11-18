@@ -5512,7 +5512,7 @@ impl TypeEnvironment {
             }
             (ValueType::Text(_), ValueType::Text(_)) => EqualitySchedule::Text,
             (ValueType::String, ValueType::Text(_)) | (ValueType::Text(_), ValueType::String) => {
-                return ill_typed(IllTypedCause::OperatorIneligible)
+                return ill_typed(IllTypedCause::TypeMismatch)
             }
             (ValueType::Enum(l), ValueType::Enum(r)) if l != r => {
                 return ill_typed(IllTypedCause::DistinctEnumDeclarations)
@@ -5962,6 +5962,32 @@ mod native_type_tests {
             ),
             Outcome::Completed(true)
         ));
+    }
+
+    /// String and Text are distinct types with no common equality type.
+    #[trace("FR-149-AC-22")]
+    #[test]
+    fn string_text_equality_refuses_with_type_mismatch() {
+        let types = TypeEnvironment::new([], []).expect("empty environment");
+        let enum_members = EnumMemberIndex::default();
+        let pairs = [
+            (ValueType::String, ValueType::Text(text_type())),
+            (ValueType::Text(text_type()), ValueType::String),
+        ];
+
+        for (left, right) in pairs {
+            for operator in [EqualityOperator::Equal, EqualityOperator::NotEqual] {
+                let refusal = types
+                    .check_equality(
+                        operator,
+                        EqualityOperand::typed(left.clone()),
+                        EqualityOperand::typed(right.clone()),
+                        &enum_members,
+                    )
+                    .expect_err("String and Text have no common equality type");
+                assert_eq!(refusal.cause, IllTypedCause::TypeMismatch);
+            }
+        }
     }
 
     /// A String member is admitted recursively and can be constructed in its declared record.
