@@ -56,7 +56,10 @@ parts by the caller that lowers the checked package.
    tuple whose every position is a clock is the empty tuple `Tuple(vec![])`.
 3. **Union members.** A case whose payload is a clock is a member with no
    payload position (`UnionMemberDeclaration` with empty `positions`), keeping
-   its identifier, its `UnionMember` binding and its place in member order; it
+   its identifier, its `UnionMember` binding and its place in member order. The
+   caller supplies the members of `CompositeShape::Union` in FSpec FR-322's
+   member order, ascending UTF-8 byte order of case name, which is the order
+   the crate keeps as declaration order; it
    stays distinct from every other member, a nullary member included, and its
    value is the empty payload.
 4. **Identity.** A data part takes the `NodeKey` of the declaration node of its
