@@ -44,7 +44,7 @@ fn environment() -> TypeEnvironment {
             CompositeDeclaration::new(
                 phase.clone(),
                 "Phase",
-                CompositeShape::Union(vec![member("Idle"), member("Armed")]),
+                CompositeShape::Union(vec![member("Armed"), member("Idle")]),
             ),
             CompositeDeclaration::new(
                 common::node(5),
