@@ -112,3 +112,35 @@ No cargo command was started by this reviewer. The existing queued Clippy log st
 
 PR115's inspected diff (head db597fe3d70f5b37ed31917bc4e48d3145af8081) is used as the proposed owning contract. Its API query returned a state different from the brief's OPEN status. No merge or integration into the frozen PR116 base is assumed; lead must reconcile dependency status. Core-data PR360 is the completed upstream admission work per the brief.
 
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1: inspected pushed head 1193b513280c51a92936e947a12b96f0b70e5611. Phase is supplied as Armed, Idle at tests/clock_data_shapes.rs:47, matching the preserved expected-position assertion at :106–108. Production declaration-order lookup remains unchanged. |
+
+## Disposition round 1 evidence
+
+**Current verdict: PASS; the coder's focused clock_ tests passed, and merge is review-clear subject to custody of these normalized artifacts and the final custody diff-check.** All findings without prior outcomes were checked: FND-001 is fixed. No new defects were found; no additional finding IDs were allocated. The original Findings and review-pass prose above remain historical and unchanged apart from whitespace normalization.
+
+Fixed source excerpt, tests/clock_data_shapes.rs:47:
+
+```rust
+                CompositeShape::Union(vec![member("Armed"), member("Idle")]),
+```
+
+The iteration over ["Armed", "Idle"] and assert_eq!(position, expected_position) at lines 106–108 are intact. The production lookup still enumerates the retained declaration vector (src/declaration.rs:3158–3171); no sorting was introduced. Static inspection now reaches both Phase cases' retained identifier/binding/key, empty payload, reconstruction, admits(), positive equality, cross-member inequality and WrongArity assertions without the original index mismatch. Runtime success is not inferred from this inspection. Slot, Trio, Ticks and Timer bodies and all typed refusal assertions are unchanged from the reviewed candidate.
+
+PR115 is verified MERGED at e7f477ce6e6ec1f0fb6e8b6a8b05428c29a61d7d, mergedAt 2026-11-19T16:24:21Z. That commit is the current PR116 base and an ancestor in the local history, so FR-133 and TC-930 are now integrated owning specifications rather than proposed context. The earlier dependency uncertainty above is superseded.
+
+The committed SR copies were compared byte-for-byte with the original scratch artifacts and matched. For this authoritative disposition copy, trailing spaces were removed and the extra EOF blank was removed; no original finding wording or other original content changed. The lead/coder must copy this updated file into reviews/ in the final evidence commit.
+
+Validation observed during this disposition:
+- PR116 API head and local HEAD both resolve to 1193b513280c51a92936e947a12b96f0b70e5611; the sole working tree is clean.
+- Test diff against original review head changes only member("Idle"), member("Armed") to member("Armed"), member("Idle"). Relative to the merged spec base, only the new test and two original SRs are present.
+- Direct rustfmt --edition 2021 --check tests/clock_data_shapes.rs exits 0, with stable-channel warnings for imports_granularity/group_imports.
+- Existing original Clippy log contains successful completion. The affected /Users/peter/dev/_lead-bin/qsl-2253-clippy-round1.log now contains Checking filament-semantic-value and Finished dev profile in 0.32s. This is observed coder-owned log evidence, not a reviewer-executed cargo check.
+- The later /Users/peter/dev/_lead-bin/qsl-2253-test-round1.log completed: clock_record_data_shape_round_trips_only_its_named_data_field, clock_union_data_shape_round_trips_without_a_payload_placeholder, and clock_tuple_data_shape_round_trips_only_its_ordered_data_slots all passed; result 3 passed, 0 failed, 0 ignored, 0 measured, 0 filtered out. This is coder-owned focused test evidence, not a reviewer cargo execution. No targeted test remains pending. The old pre-mutation queued test was cancelled per the lead's brief; it is not recorded as a semantic test failure.
+- Current committed git diff --check reports only the original SR trailing space and extra EOF blank lines; those defects are removed in this scratch copy. Copying these authoritative artifacts and the final custody diff-check remain lead/coder work.
+- No cargo command, duplicate queue entry, full suite, workspace sweep, aggregate, gate, merge or product/test edit was performed by this reviewer.
+
+Code-review continues to include the Rust lane and loaded rust-style conventions. Manual AC-to-tests assessment remains the appropriate replacement for production gap-analysis on this test-only change. No computed-matrix or wire/model-lowering coverage claim is added.
