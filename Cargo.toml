@@ -14,7 +14,7 @@ name = "filament_semantic_value"
 path = "src/lib.rs"
 
 [dependencies]
-filament-exact = { git = "https://github.com/agent-ix/filament-exact", tag = "v0.3.0" }
+filament-exact = { git = "https://github.com/agent-ix/filament-exact", rev = "b25ff96fee8ab80418e7f7aaf8e9441c60745ab1" }
 # The one RFC 8785 encoder, without `std`, for bounded measurement of
 # structural compound-unit terms.
 quire-canonical = { version = "0.3", git = "https://github.com/agent-ix/quire-canonical", tag = "v0.3.1", default-features = false }
