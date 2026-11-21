@@ -76,7 +76,9 @@ impl UnitGraph {
             .iter()
             .map(|(key, map)| (key.clone(), normalize(map, &base_classes)))
             .collect();
-        self.check_equivalences(members, &dimensions)?;
+        let coherence = self.coherent_scales(&original, &base_classes, members);
+        let pivot = self.pivot_factors(&original, members);
+        self.check_equivalences(members, &dimensions, &coherence)?;
         let nominal_units = self.nominal_units.as_ref().unwrap_or(&self.units);
         let mut projected = self.clone();
         projected.units = nominal_units.clone();
@@ -105,6 +107,11 @@ impl UnitGraph {
                         refusal(representative, DimensionEquivalenceCause::MissingRoot)
                     })?;
                 }
+            }
+            // A derived class root is coherent with the product of its base
+            // class roots at their exponents; compound values meet it there.
+            if let Some(factor) = pivot.get(&unit.conversion_class) {
+                unit.coherence = factor.clone();
             }
         }
         Ok(projected)
@@ -149,6 +156,79 @@ impl UnitGraph {
             .collect()
     }
 
+    /// For each derived dimension, the size of its canonical root in the
+    /// product of its base-class roots at their exponents: the product of the
+    /// base classes' root scales raised to the exponents, exactly.
+    fn coherent_scales(
+        &self,
+        original: &BTreeMap<NodeKey, Dimension>,
+        base_classes: &BTreeMap<NodeKey, NodeKey>,
+        members: &[(NodeKey, NodeKey, Rational)],
+    ) -> BTreeMap<NodeKey, Rational> {
+        let one = Rational::from_integer(Integer::one());
+        let row_scale = |key: &NodeKey| {
+            members
+                .iter()
+                .find(|row| &row.0 == key)
+                .map_or_else(|| one.clone(), |row| row.2.clone())
+        };
+        let base_scale = |base: &NodeKey| {
+            let class = base_classes.get(base).unwrap_or(base);
+            row_scale(base)
+                .div(&row_scale(class))
+                .unwrap_or_else(|| one.clone())
+        };
+        original
+            .iter()
+            .filter(|(key, _)| !self.is_base(key))
+            .map(|(key, map)| {
+                let scale = map.0.iter().fold(one.clone(), |scale, (base, exponent)| {
+                    let factor = base_scale(base)
+                        .pow(exponent)
+                        .unwrap_or_else(|| one.clone());
+                    scale.mul(&factor)
+                });
+                (key.clone(), scale)
+            })
+            .collect()
+    }
+
+    /// The factor between a class root and the compound of its base-class
+    /// roots, for each class without a base member, keyed by representative.
+    /// Every other class is already in base-class roots through its
+    /// identification edges.
+    fn pivot_factors(
+        &self,
+        original: &BTreeMap<NodeKey, Dimension>,
+        members: &[(NodeKey, NodeKey, Rational)],
+    ) -> BTreeMap<NodeKey, Rational> {
+        let one = Rational::from_integer(Integer::one());
+        let row_scale = |key: &NodeKey| {
+            members
+                .iter()
+                .find(|row| &row.0 == key)
+                .map_or_else(|| one.clone(), |row| row.2.clone())
+        };
+        original
+            .iter()
+            .filter(|(key, _)| !self.is_base(key))
+            .filter(|(key, _)| {
+                let represented = members.iter().find(|row| &row.0 == *key);
+                represented.is_none_or(|row| &row.1 == *key)
+                    && !members
+                        .iter()
+                        .any(|row| &row.1 == *key && self.is_base(&row.0))
+            })
+            .map(|(key, map)| {
+                let factor = map.0.iter().fold(one.clone(), |factor, (base, exponent)| {
+                    let part = row_scale(base).pow(exponent).unwrap_or_else(|| one.clone());
+                    factor.mul(&part)
+                });
+                (key.clone(), factor)
+            })
+            .collect()
+    }
+
     fn nominal_root(&self, dimension: &NodeKey) -> Option<NodeKey> {
         self.nominal.values().find_map(|node| match &node.form {
             NominalUnitForm::Unit {
@@ -164,6 +244,7 @@ impl UnitGraph {
         &self,
         members: &[(NodeKey, NodeKey, Rational)],
         dimensions: &BTreeMap<NodeKey, Dimension>,
+        coherence: &BTreeMap<NodeKey, Rational>,
     ) -> Result<(), DimensionEquivalenceRefusal> {
         use DimensionEquivalenceCause as Cause;
         let mut seen = BTreeSet::new();
@@ -209,6 +290,24 @@ impl UnitGraph {
                     &row.1 == representative && dimensions.get(&row.0) != dimensions.get(dimension)
                 })
             {
+                return Err(refusal(dimension, Cause::IncompatibleClass));
+            }
+        }
+        // A derived member's root scale is fixed by the base roots (FSpec
+        // FR-142 step 6), checked once every row is otherwise valid.
+        for (dimension, representative, scale) in members {
+            let Some(coherent) = coherence.get(dimension) else {
+                continue;
+            };
+            let least_base = members
+                .iter()
+                .filter(|row| &row.1 == representative && self.is_base(&row.0))
+                .min_by(|left, right| left.0.cmp(&right.0));
+            let expected = match least_base {
+                Some((_, _, base_scale)) => Some(coherent.mul(base_scale)),
+                None => coherent.div(coherence.get(representative).unwrap_or(&one)),
+            };
+            if expected.as_ref() != Some(scale) {
                 return Err(refusal(dimension, Cause::IncompatibleClass));
             }
         }

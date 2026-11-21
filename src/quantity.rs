@@ -91,6 +91,16 @@ impl QuantityUnit {
         }
     }
 
+    /// A declared operand's canonical-root value in the compound of its
+    /// base-class roots (FR-134 behavior 3): uncharged, one without a
+    /// derived class root.
+    fn in_compound(&self, value: Rational) -> Rational {
+        match self {
+            Self::Declared(unit) => value.mul(unit.coherence()),
+            Self::Compound(_) => value,
+        }
+    }
+
     /// The compound unit of this unit's canonical root.
     fn canonical_compound(&self) -> CompoundUnit {
         match self {
@@ -770,6 +780,7 @@ fn evaluate(
             charge_edges(left_edges.len() + right_edges.len(), meter)?;
             let left = events(a.value(), &left_edges, meter)?;
             let right = events(b.value(), &right_edges, meter)?;
+            let (left, right) = (a.unit.in_compound(left), b.unit.in_compound(right));
             let value = if matches!(operation, QuantityOperation::Multiply(..)) {
                 rational_event(RationalArithmetic::Multiply(&left, &right), meter)?
             } else {
@@ -781,6 +792,7 @@ fn evaluate(
             let edges = to_root(a.unit);
             charge_edges(edges.len(), meter)?;
             let base = events(a.value(), &edges, meter)?;
+            let base = a.unit.in_compound(base);
             Quantity::new(
                 power(&base, exponent, meter)?.ok_or(Stop::Undefined(Undefined::DivisionByZero))?,
                 unit,
@@ -864,6 +876,15 @@ fn convert(
         .collect();
     charge_edges(source_edges.len() + target_edges.len(), meter)?;
     let canonical = events(source.value(), &source_edges, meter)?;
+    let canonical = match (source.unit, unit) {
+        (QuantityUnit::Declared(_), QuantityUnit::Compound(_)) => {
+            source.unit.in_compound(canonical)
+        }
+        (QuantityUnit::Compound(_), QuantityUnit::Declared(target)) => canonical
+            .div(target.coherence())
+            .ok_or(Stop::Undefined(Undefined::DivisionByZero))?,
+        _ => canonical,
+    };
     let exact = events(&canonical, &target_edges, meter)?;
     let value = match target {
         Target::Exact => {

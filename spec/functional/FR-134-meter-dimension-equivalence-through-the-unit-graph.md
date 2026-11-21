@@ -113,7 +113,25 @@ quantity. Runtime arithmetic remains in the existing metered quantity core.
    canonical root of the representative dimension. FSV SHALL retain existing
    unit edges in source-to-root order before that edge. FSV SHALL add no
    identification edge to representative dimensions. FSV SHALL NOT substitute
-   an original declaration-pair path for this star graph.
+   an original declaration-pair path for this star graph. A derived
+   dimension's canonical root is coherent with the product of its base-class
+   roots at their exponents, whether or not the dimension has a membership
+   row. The coherent scale of a derived dimension is the product, over its
+   base terms, of each base dimension's root scale in its class relative to
+   the class's least base member, raised to the term's exponent, computed
+   exactly with negative exponents and rational scales. FSV SHALL apply the
+   coherence factor of a class without a base member, the product over its
+   representative's base terms of each base dimension's root scale relative to
+   its own class root raised to the term's exponent, uncharged, where a
+   compound value meets that class's canonical root: a declared unit's value
+   entering a compound multiplies by it and a compound value converting to a
+   declared unit divides by it. The coherence factor is not a unit edge: it
+   adds no path edge, no charged event and no change to declared-to-declared
+   conversion. The coherent scale is used only for the `IncompatibleClass` check.
+   FSV SHALL refuse `IncompatibleClass` for a listed derived
+   member whose root scale differs from its coherent scale multiplied by the
+   root scale of its class's least base member when the class has a base
+   member, and otherwise divided by its representative's coherent scale.
 4. When direct conversion is requested between declared units, FSV SHALL
    admit it exactly when their original dimension nodes are equal or their
    conversion-class identities are equal. For a conversion with a compound

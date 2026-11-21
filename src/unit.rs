@@ -205,6 +205,7 @@ pub struct Unit {
     root: NodeKey,
     path: Vec<UnitEdge>,
     canonical: UnitEdge,
+    coherence: Rational,
 }
 
 impl Unit {
@@ -224,6 +225,7 @@ impl Unit {
             root,
             path,
             canonical,
+            coherence: Rational::from_integer(Integer::one()),
         }
     }
 
@@ -267,6 +269,14 @@ impl Unit {
     /// The composed exact mapping to the canonical root.
     pub fn canonical(&self) -> &UnitEdge {
         &self.canonical
+    }
+
+    /// The size of this unit class's canonical root in the product of its
+    /// base-class roots at their exponents: one without a dimension
+    /// equivalence projection or for a base dimension. Applied, uncharged,
+    /// only where a compound value meets this unit's canonical root.
+    pub fn coherence(&self) -> &Rational {
+        &self.coherence
     }
 
     /// Whether this unit is affine: a nonzero-offset point unit that admits
@@ -706,6 +716,7 @@ fn unit_paths(
                     root: current.0.clone(),
                     path,
                     canonical,
+                    coherence: Rational::from_integer(Integer::one()),
                 },
             ))
         })
