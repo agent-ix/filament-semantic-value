@@ -27,7 +27,8 @@ Ticket: QSL-2734. Review of the FR-134 behavior 3 paragraph that PR #121 adds, c
 | --- | --- | --- | --- |
 | FND-001 | medium | The refusal sentence covered only non-representative derived members. Fixed: it now states the check against the least base member, or the representative's coherent scale when the class has no base member. | FR-142, FR-134-AC-7 |
 | FND-002 | medium | The paragraph made the coherence step a charged edge, which FR-142 does not count. Fixed: the paragraph states the factor is applied at the compound pivot and is not a charged edge. | FR-142, FR-134-AC-3 |
+| FND-003 | low | "Coherence factor" was never defined; the defined coherent scale differs from the applied factor when a base belongs to a class with a derived representative. Fixed in fix round 2: the factor is defined as the product over the representative's base terms of each base dimension's root scale relative to its own class root, and the coherent scale is stated to serve only the `IncompatibleClass` check. | FR-134-AC-7 |
 
 ## Verdict
 
-All findings fixed in fix round 1; re-review pending.
+Disposition pass 1 at f382896da0efc98aef54129a0c626323547c5044: FND-001 and FND-002 fixed; FND-003 raised and fixed in fix round 2.

@@ -30,7 +30,8 @@ Ticket: QSL-2734. PR filament-semantic-value#121, reviewed at head 2563bb773ff28
 | FND-001 | medium | The contradiction check never fires for a derived representative of a mixed class, so refusal depended on node-key order. Fixed: every derived member is checked against the least base member (or the representative's coherent scale when the class has no base member); test `dimension_equivalence_derived_representative_must_agree_with_its_base_members` builds both key orders. | FR-134, FR-142 |
 | FND-002 | medium | The coherence factor was a charged unit edge, adding edges to same-dimension derived conversions that FR-142 does not count. Fixed per arch ruling (b): the factor is stored on the unit and applied uncharged at the compound pivot only; paths and edge counts are as before the PR. | FR-134-AC-3, FR-142 |
 | FND-003 | low | Coherence was compared before every row was validated, so a malformed base row could be masked by an IncompatibleClass on an earlier derived row. Fixed: the comparison is a second loop after the per-row loop. | FR-134 |
+| FND-004 | low | The FND-003 regression assertion put the malformed base row before the derived rows, so a single-loop check passed it too. Fixed in fix round 2: the malformed base row is moved after the derived rows and must still report NonPositiveScale. | FR-134 |
 
 ## Verdict
 
-All findings fixed in fix round 1; re-review pending.
+Disposition pass 1 at f382896da0efc98aef54129a0c626323547c5044: FND-001, FND-002 and FND-003 fixed; FND-004 raised and fixed in fix round 2.

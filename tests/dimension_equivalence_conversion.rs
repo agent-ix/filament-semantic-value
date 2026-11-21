@@ -1078,9 +1078,10 @@ fn dimension_equivalence_listed_derived_root_must_agree_with_its_base_roots() {
     let refusal = graph.with_dimension_equivalences(&rows(4)).unwrap_err();
     assert_eq!(refusal.dimension, key(4));
     assert_eq!(refusal.cause, Cause::IncompatibleClass);
-    // A malformed base row is reported before any coherence comparison.
+    // A malformed base row after the derived rows is still reported first.
     let mut malformed = rows(4);
-    malformed[1].2 = rat(0, 1);
+    let (dimension, representative, _) = malformed.remove(1);
+    malformed.push((dimension, representative, rat(0, 1)));
     assert_eq!(
         graph
             .with_dimension_equivalences(&malformed)
