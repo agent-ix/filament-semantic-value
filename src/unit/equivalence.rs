@@ -4,7 +4,6 @@
 
 use super::{Dimension, NominalUnitForm, UnitEdge, UnitGraph, UnmeteredAffine};
 use alloc::collections::{BTreeMap, BTreeSet};
-use alloc::vec::Vec;
 use filament_exact::{Integer, NodeKey, Rational};
 
 /// The first malformed membership row, without a projected graph.
@@ -78,15 +77,13 @@ impl UnitGraph {
             .map(|(key, map)| (key.clone(), normalize(map, &base_classes)))
             .collect();
         self.check_equivalences(members, &dimensions)?;
+        let nominal_units = self.nominal_units.as_ref().unwrap_or(&self.units);
         let mut projected = self.clone();
+        projected.units = nominal_units.clone();
+        projected.nominal_units = Some(nominal_units.clone());
         projected.dimensions = dimensions;
         for unit in projected.units.values_mut() {
             let nominal_dimension = unit.dimension_node.clone();
-            let (root, path, canonical) = self.nominal_path(&unit.key, &nominal_dimension)?;
-            unit.root = root;
-            unit.path = path;
-            unit.canonical = canonical;
-            unit.conversion_class = nominal_dimension.clone();
             if let Some(dimension) = projected.dimensions.get(&nominal_dimension) {
                 unit.dimension = dimension.clone();
             }
@@ -216,37 +213,6 @@ impl UnitGraph {
             }
         }
         Ok(())
-    }
-
-    fn nominal_path(
-        &self,
-        key: &NodeKey,
-        dimension: &NodeKey,
-    ) -> Result<(NodeKey, Vec<UnitEdge>, UnitEdge), DimensionEquivalenceRefusal> {
-        let mut current = key.clone();
-        let mut path = Vec::new();
-        let mut canonical = UnitEdge::identity();
-        loop {
-            match self.nominal.get(&current).map(|node| &node.form) {
-                Some(NominalUnitForm::Unit {
-                    target: Some(target),
-                    scale,
-                    offset,
-                    ..
-                }) => {
-                    let edge = UnitEdge::from_admitted(scale.clone(), offset.clone());
-                    canonical = canonical
-                        .followed_by(&edge, &mut UnmeteredAffine)
-                        .unwrap_or_else(|never| match never {});
-                    path.push(edge);
-                    current = target.clone();
-                }
-                Some(NominalUnitForm::Unit { target: None, .. }) => {
-                    return Ok((current, path, canonical))
-                }
-                _ => return Err(refusal(dimension, DimensionEquivalenceCause::MissingRoot)),
-            }
-        }
     }
 }
 

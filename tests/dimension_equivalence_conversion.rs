@@ -4,8 +4,8 @@ mod common;
 
 use filament_exact::{
     rational_arithmetic_bits, ChargeAdmission, ChargeEvent, ChargePoint, ComparisonOperator,
-    IllTypedCause, InjectedDenial, Integer, LimitKind, Meter, NodeKey, Outcome, Quantity, Rational,
-    RationalArithmetic, ScalarLimits, UnitId,
+    IllTypedCause, Incomplete, InjectedDenial, Integer, LimitKind, Meter, NodeKey, Outcome,
+    Quantity, Rational, RationalArithmetic, ScalarLimits, UnitId,
 };
 use filament_semantic_value::quantity::{
     compare_quantity, convert_quantity, evaluate_quantity_unit, result_unit, Conversion,
@@ -647,32 +647,162 @@ fn dimension_equivalence_conversion_empty_overlay_preserves_schedule_and_tight_l
     );
     assert_eq!(before, after);
     let table = UnitTable::declared(&projected());
-    let quantity = q(&table, 1, 1, 21);
-    for tight in [
-        ScalarLimits {
-            work_units: 0,
-            ..limits()
-        },
-        ScalarLimits {
-            integer_bits: 0,
-            ..limits()
-        },
-        ScalarLimits {
-            unit_edges: 0,
-            ..limits()
-        },
-        ScalarLimits {
-            value_occurrences: 0,
-            ..limits()
-        },
-        ScalarLimits {
-            result_units: 0,
-            ..limits()
-        },
+    let quantity = q(&table, 3, 1, 22);
+    let mut observed = meter();
+    observed.enable_charge_capture(64, 128);
+    let expected = exact(convert(&table, &quantity, 12, &mut observed));
+    let capture = observed.disable_charge_capture().unwrap().unwrap();
+    for kind in [
+        LimitKind::WorkUnits,
+        LimitKind::UnitEdges,
+        LimitKind::IntegerBits,
+        LimitKind::ValueOccurrences,
+        LimitKind::ResultUnits,
     ] {
-        assert!(matches!(
-            convert(&table, &quantity, 11, &mut Meter::new(tight)),
-            Outcome::Incomplete(_)
-        ));
+        let sufficient = observed.consumed(kind);
+        assert!(sufficient > 0);
+        let mut exact_meter = Meter::new(limit_only(kind, sufficient));
+        assert_eq!(
+            convert(&table, &quantity, 12, &mut exact_meter),
+            Outcome::Completed(expected.clone())
+        );
+        assert_prefix_counters(&exact_meter, capture.events());
+        let bound = sufficient - 1;
+        let mut denied = Meter::new(limit_only(kind, bound));
+        denied.enable_charge_capture(64, 128);
+        let actual = convert(&table, &quantity, 12, &mut denied);
+        let index = capture
+            .events()
+            .iter()
+            .enumerate()
+            .position(|(index, event)| {
+                let before = prefix_consumed(&capture.events()[..index], kind);
+                let next = event_request(event, kind).to_u64().unwrap();
+                match kind {
+                    LimitKind::WorkUnits | LimitKind::ResultUnits => before + next > bound,
+                    _ => next > bound,
+                }
+            })
+            .unwrap();
+        let event = &capture.events()[index];
+        assert_eq!(
+            actual,
+            Outcome::Incomplete(Incomplete {
+                limit_kind: kind,
+                limit: bound,
+                consumed: prefix_consumed(&capture.events()[..index], kind),
+                next_charge: event_request(event, kind),
+                charge_point: event.point
+            })
+        );
+        assert_prefix_counters(&denied, &capture.events()[..index]);
+        let actual_events = denied.disable_charge_capture().unwrap().unwrap();
+        assert_eq!(&actual_events.events()[..index], &capture.events()[..index]);
+        assert_eq!(actual_events.events().len(), index + 1);
+        let mut expected_denied = event.clone();
+        expected_denied.admission = ChargeAdmission::Denied;
+        assert_eq!(actual_events.events()[index], expected_denied);
     }
+}
+
+fn limit_only(kind: LimitKind, bound: u64) -> ScalarLimits {
+    match kind {
+        LimitKind::WorkUnits => ScalarLimits {
+            work_units: bound,
+            ..limits()
+        },
+        LimitKind::UnitEdges => ScalarLimits {
+            unit_edges: bound,
+            ..limits()
+        },
+        LimitKind::IntegerBits => ScalarLimits {
+            integer_bits: bound,
+            ..limits()
+        },
+        LimitKind::ValueOccurrences => ScalarLimits {
+            value_occurrences: bound,
+            ..limits()
+        },
+        LimitKind::ResultUnits => ScalarLimits {
+            result_units: bound,
+            ..limits()
+        },
+        _ => panic!("fixture measures five quantity limits"),
+    }
+}
+
+fn event_request(event: &ChargeEvent, kind: LimitKind) -> Integer {
+    match kind {
+        LimitKind::WorkUnits => event.work_units.clone(),
+        LimitKind::ResultUnits => event.result_units.clone(),
+        _ => event
+            .sizes
+            .iter()
+            .filter(|(found, _)| *found == kind)
+            .map(|(_, amount)| amount)
+            .max()
+            .cloned()
+            .unwrap_or_else(Integer::zero),
+    }
+}
+
+fn prefix_consumed(events: &[ChargeEvent], kind: LimitKind) -> u64 {
+    let amounts = events
+        .iter()
+        .map(|event| event_request(event, kind).to_u64().unwrap());
+    match kind {
+        LimitKind::WorkUnits | LimitKind::ResultUnits => amounts.sum(),
+        _ => amounts.max().unwrap_or(0),
+    }
+}
+
+#[trace("TC-931", "FR-134-AC-7")]
+#[test]
+fn dimension_equivalence_conversion_equal_map_derived_nodes_require_explicit_membership() {
+    let base = DimensionNode::checked(vec![], NominalDeclaration::default()).unwrap();
+    let derived = DimensionNode::checked_derived(
+        vec![(key(1), Integer::from(2_i64))],
+        NominalDeclaration::default(),
+    )
+    .unwrap();
+    let graph = UnitGraph::from_checked_nodes(
+        &BTreeMap::from([(key(1), base), (key(2), derived.clone()), (key(3), derived)]),
+        &BTreeMap::from([
+            (key(21), unit(2, None, 1, 1, 0)),
+            (key(31), unit(3, None, 1, 1, 0)),
+        ]),
+    )
+    .unwrap();
+    let table = UnitTable::declared(&graph);
+    assert_eq!(
+        declared(&table, 21).dimension(),
+        declared(&table, 31).dimension()
+    );
+    let quantity = q(&table, 7, 1, 31);
+    let mut untouched = meter();
+    let snapshot = untouched.clone();
+    assert_eq!(
+        convert_quantity(
+            table.resolve(&quantity).unwrap(),
+            declared(&table, 21),
+            &QuantityTarget::Exact,
+            &mut untouched
+        )
+        .unwrap_err()
+        .cause,
+        IllTypedCause::IncompatibleDimensions
+    );
+    assert_eq!(untouched, snapshot);
+    let graph = graph
+        .with_dimension_equivalences(&[(key(2), key(2), rat(1, 1)), (key(3), key(2), rat(1, 1))])
+        .unwrap();
+    let table = UnitTable::declared(&graph);
+    let mut charged = meter();
+    let (converted, identified) = exact(convert(&table, &quantity, 21, &mut charged))
+        .identified_quantity()
+        .unwrap();
+    assert_eq!(converted.magnitude(), &rat(7, 1));
+    assert_eq!(converted.unit(), &UnitId::declared(key(21)));
+    assert_eq!(converted.unit(), &identified.id());
+    assert_eq!(charged.consumed(LimitKind::UnitEdges), 1);
 }

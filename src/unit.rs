@@ -418,6 +418,8 @@ impl UnitNode {
 pub struct UnitGraph {
     dimensions: BTreeMap<NodeKey, Dimension>,
     units: BTreeMap<NodeKey, Unit>,
+    /// Original outputs of `unit_paths`, retained only on projected graphs.
+    nominal_units: Option<BTreeMap<NodeKey, Unit>>,
     /// Each admitted dimension and unit node as lowering builds it, by key.
     nominal: BTreeMap<NodeKey, NominalUnitNode>,
 }
@@ -492,6 +494,7 @@ impl UnitGraph {
         Ok(Self {
             dimensions: dimension_maps,
             units,
+            nominal_units: None,
             nominal,
         })
     }
