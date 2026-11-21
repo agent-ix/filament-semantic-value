@@ -66,13 +66,14 @@ impl QuantityUnit {
     }
 
     /// Whether direct conversion from `self` into `target` is admitted. Two
-    /// declared units need one dimension node, so equal base-dimension maps
-    /// under distinct nodes (torque and energy) are not enough; a compound
-    /// side compares base-dimension maps.
+    /// declared units need one dimension node or an explicitly admitted
+    /// conversion class. Equal maps alone (torque and energy) are not enough;
+    /// a compound side compares normalized base-dimension maps.
     pub fn converts_to(&self, target: &Self) -> bool {
         match (self, target) {
             (Self::Declared(source), Self::Declared(target)) => {
                 source.dimension_node() == target.dimension_node()
+                    || source.conversion_class() == target.conversion_class()
             }
             _ => self.has_dimension_of(target),
         }

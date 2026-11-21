@@ -36,6 +36,9 @@ use crate::semantic_node::{
     check_terms, IdentityRefusal, InvalidSemanticGraph, SemanticGraphCause, IDENTITY_LIMITS,
 };
 
+mod equivalence;
+pub use equivalence::{DimensionEquivalenceCause, DimensionEquivalenceRefusal};
+
 /// The graph refusal of `cause`.
 fn refuse(cause: SemanticGraphCause) -> InvalidSemanticGraph {
     InvalidSemanticGraph { cause }
@@ -197,6 +200,7 @@ impl UnitEdge {
 pub struct Unit {
     key: NodeKey,
     dimension_node: NodeKey,
+    conversion_class: NodeKey,
     dimension: Dimension,
     root: NodeKey,
     path: Vec<UnitEdge>,
@@ -214,6 +218,7 @@ impl Unit {
     ) -> Self {
         Self {
             key,
+            conversion_class: dimension_node.clone(),
             dimension_node,
             dimension,
             root,
@@ -238,12 +243,18 @@ impl Unit {
         self.dimension_node.clone()
     }
 
+    /// The admitted conversion class, distinct from the nominal dimension.
+    pub(crate) fn conversion_class(&self) -> &NodeKey {
+        &self.conversion_class
+    }
+
     /// The normalized dimension map.
     pub fn dimension(&self) -> &Dimension {
         &self.dimension
     }
 
-    /// The canonical root unit of the unit's dimension node.
+    /// The canonical root unit used for conversion: the admitted class root
+    /// when this graph has a dimension-equivalence projection.
     pub fn root(&self) -> NodeKey {
         self.root.clone()
     }
@@ -687,6 +698,7 @@ fn unit_paths(
                 Unit {
                     key: key.clone(),
                     dimension_node: unit.dimension.clone(),
+                    conversion_class: unit.dimension.clone(),
                     dimension,
                     root: current.0.clone(),
                     path,
