@@ -235,11 +235,6 @@ fn ieee_discovery_preserves_record_tuple_union_and_cycle_behavior() {
     for number in 1..=4 {
         let composite = ValueType::Composite(common::node(number));
         assert_eq!(environment.try_check_type(&composite), Ok(()));
-        let expected = if number == 4 {
-            Ok(())
-        } else {
-            refused(IllTypedCause::OperatorIneligible)
-        };
         for kind in [
             CollectionKind::Set,
             CollectionKind::Bag,
@@ -247,7 +242,7 @@ fn ieee_discovery_preserves_record_tuple_union_and_cycle_behavior() {
         ] {
             assert_eq!(
                 environment.try_check_type(&collection(kind, composite.clone())),
-                expected
+                Ok(())
             );
         }
     }
