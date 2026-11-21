@@ -52,7 +52,14 @@ root `pulse`. Use exact rational scales, not floating-point tolerances.
    compound terms, combined and cancelled exponents, and declared/compound
    identity separation. Create two derived dimensions of equal maps without
    a membership row and assert their direct declared conversion is refused;
-   add admitted scale-one membership and assert it is admitted (AC-7).
+   add admitted scale-one membership and assert it is admitted. Also create
+   base Time and derived Dur=Time, with their roots s and dsec, and admit
+   scale-one membership: conversion of 3 s must yield exact 3 dsec. Repeat
+   with key order making Dur the general conversion-class representative;
+   normalized dimension maps must still hold base Time, not Dur. In a
+   separate graph, supply a Time/Area=Time^2 class and assert
+   IncompatibleClass, no projected graph and unchanged original graph
+   (AC-7).
 
 ## Expected Results
 
@@ -68,3 +75,7 @@ root `pulse`. Use exact rational scales, not floating-point tolerances.
   is needed to obtain any expected value.
 - Source/package admission and BareWorld source-to-result tests remain the
   FSL lane's separate acceptance evidence for QSL-2734.
+- Mixed base/derived membership is admitted when normalized maps and the
+  caller-admitted base-implied ratios agree. An unequal-map mixed class
+  refuses; general conversion classes never substitute derived keys into
+  base dimension maps.

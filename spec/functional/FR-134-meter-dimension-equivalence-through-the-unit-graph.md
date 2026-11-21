@@ -90,16 +90,23 @@ quantity. Runtime arithmetic remains in the existing metered quantity core.
    not the least structural dimension key of the class
    (`NonCanonicalRepresentative`), scale not positive (`NonPositiveScale`),
    representative scale not one (`NonIdentityRepresentative`), or a class
-   mixing base and derived dimensions or unequal normalized derived maps
-   (`IncompatibleClass`). Otherwise, FSV SHALL return the overlay. FSV SHALL
+   containing a derived member whose normalized map differs from another
+   member's map after base-class normalization (`IncompatibleClass`). A mixed
+   base/derived class with equal normalized maps is valid; the caller has
+   already admitted its base-implied root ratios. Otherwise, FSV SHALL return
+   the overlay. FSV SHALL
    leave the input graph unchanged on refusal. When the row slice is empty,
    FSV SHALL return an equivalent graph.
 2. FSV SHALL retain every nominal node key, declared unit id,
    `Unit::dimension_node()` and nominal preimage unchanged in the projected
    graph and its `UnitTable::declared` projection. FSV SHALL maintain a separate
    conversion-class identity, with an unlisted dimension its own class.
-   FSV SHALL replace base-dimension members by their representatives when forming
-   runtime dimension maps, combining exponents and removing zero terms.
+   FSV SHALL normalize base-dimension keys using only the base members of each
+   admitted class, choosing their least structural base-dimension key,
+   combining exponents and removing zero terms. FSV SHALL keep that
+   base-class normalization distinct from the general conversion-class
+   representative: a derived member cannot replace a base key in a dimension
+   map, even when it is the least member of the general conversion class.
 3. For every nonrepresentative dimension, FSV SHALL append exactly one
    identification edge from its original canonical root to its class root,
    with scale `root_scale` and offset zero. The class root is the original
@@ -156,7 +163,7 @@ quantity. Runtime arithmetic remains in the existing metered quantity core.
 | FR-134-AC-4 | At Beat size `1/4`, `6 s / 3 beat` completes with magnitude `8` and the empty dimensionless compound unit, equal to `6 s / (3/4 s)`; multiplying or squaring equivalent root operands yields the same representative-root compound identity. A formed single-root compound can be converted to a declared unit of the same normalized dimension and handed off through `identified_quantity`. | Test |
 | FR-134-AC-5 | Related distinct-unit addition, subtraction, equality and order refuse `DistinctUnits`; unrelated conversion refuses `IncompatibleDimensions`; affine arithmetic retains its existing refusal. Each leaves meter counters unchanged. A valid affine conversion with an ordinary offset edge and a class identification edge still completes with its exact expected value. | Test |
 | FR-134-AC-6 | Tight work, unit-edge, integer-bit, occurrence and result limits, and injected denial at each conversion charge point, produce the existing typed incomplete/refusal record at the first denied charge, with atomic counters and no completed result; ordinary same-dimension conversion has unchanged values and schedule under an empty overlay. | Test |
-| FR-134-AC-7 | The overlay and declared table retain original nominal keys, nominal dimension references and preimages. Equivalent root products normalize their runtime dimensions and compound terms without changing declared ids or conflating declared and compound identity arms; unrelated equal-map derived dimensions still need explicit equivalence for direct declared conversion. | Test |
+| FR-134-AC-7 | The overlay and declared table retain original nominal keys, nominal dimension references and preimages. Equivalent root products normalize their runtime dimensions and compound terms without changing declared ids or conflating declared and compound identity arms; unrelated equal-map derived dimensions still need explicit equivalence for direct declared conversion. Base Time and derived Dur=Time with root units s and dsec form an admitted mixed class at scale one and convert 3 s to exact 3 dsec; a Time/Area=Time^2 class refuses IncompatibleClass. Base dimension maps retain their base representative even when a derived member is the least conversion-class key. | Test |
 
 ## Dependencies
 
