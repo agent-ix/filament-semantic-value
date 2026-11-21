@@ -129,3 +129,36 @@ AC-6 injection tests already compare admission prefixes and atomic counters well
 }
 ```
 
+## Dispositions
+
+### Round 1
+
+Fix head ec4e3c7ce7ae1f4245aefca087fd78c6977f497b inspected directly. Actual resource ceilings now test exact sufficient and one-less bounds across five limit kinds, the first denied charge, full typed record and atomic counter prefix. A new public-API test covers distinct equal-map derived dimensions, unchanged meter on refusal, explicit membership, exact converted value and target identity.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Inspected the fix commit and its real public-API assertions. |
+| FND-002 | fixed | Inspected the fix commit and its real public-API assertions. |
+
+MERGEABLE for this PR's scoped implementation. No new findings. Original findings and the original verdict remain historical; these outcomes supersede them. Eight inherited repository matrix gaps remain separate assurance backlog; this disposition claims no repository-wide assurance completion. Lead reports 10 equivalence tests and 2 handoff regressions passing, plus focused Clippy; no Cargo command was run by this reviewer.
+
+Artifact custody: commit this updated file as reviews/qsl-2734-pr118-gap-analysis.md. The PR-qualified path avoids overwriting PR117's existing same-basename artifact; the SR id is unchanged.
+
+```yaml
+{
+  "dispositions": [
+    {
+      "fnd": "FND-001",
+      "outcome": "fixed",
+      "after_excerpt": "Outcome::Incomplete(Incomplete {\n    limit_kind: kind,\n    limit: bound,\n    consumed: prefix_consumed(&capture.events()[..index], kind),\n    next_charge: event_request(event, kind),\n    charge_point: event.point\n})"
+    },
+    {
+      "fnd": "FND-002",
+      "outcome": "fixed",
+      "after_excerpt": "fn dimension_equivalence_conversion_equal_map_derived_nodes_require_explicit_membership() {"
+    }
+  ]
+}
+```
+
+

@@ -113,3 +113,30 @@ Searched src/unit.rs and src/unit/equivalence.rs for unit path construction. Exi
 }
 ```
 
+## Dispositions
+
+### Round 1
+
+Fix head ec4e3c7ce7ae1f4245aefca087fd78c6977f497b inspected directly. The duplicate nominal_path function is deleted. Projection retains and reuses the original outputs of unit_paths; reprojection starts from those outputs rather than reconstructing ordinary paths.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Inspected the fix commit and its real public-API assertions. |
+
+MERGEABLE for this PR's scoped implementation. No new findings. Original findings and the original verdict remain historical; these outcomes supersede them. Eight inherited repository matrix gaps remain separate assurance backlog; this disposition claims no repository-wide assurance completion. Lead reports 10 equivalence tests and 2 handoff regressions passing, plus focused Clippy; no Cargo command was run by this reviewer.
+
+Artifact custody: commit this updated file as reviews/qsl-2734-pr118-code-review.md. The PR-qualified path avoids overwriting PR117's existing same-basename artifact; the SR id is unchanged.
+
+```yaml
+{
+  "dispositions": [
+    {
+      "fnd": "FND-001",
+      "outcome": "fixed",
+      "after_excerpt": "let nominal_units = self.nominal_units.as_ref().unwrap_or(&self.units);\nlet mut projected = self.clone();\nprojected.units = nominal_units.clone();\nprojected.nominal_units = Some(nominal_units.clone());"
+    }
+  ]
+}
+```
+
+
