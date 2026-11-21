@@ -160,5 +160,3 @@ Artifact custody: commit this updated file as reviews/qsl-2734-pr118-gap-analysi
   ]
 }
 ```
-
-
