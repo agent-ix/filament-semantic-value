@@ -806,3 +806,151 @@ fn dimension_equivalence_conversion_equal_map_derived_nodes_require_explicit_mem
     assert_eq!(converted.unit(), &identified.id());
     assert_eq!(charged.consumed(LimitKind::UnitEdges), 1);
 }
+
+fn derived(terms: Vec<(u64, i64)>) -> DimensionNode {
+    DimensionNode::checked_derived(
+        terms
+            .into_iter()
+            .map(|(base, exponent)| (key(base), Integer::from(exponent)))
+            .collect(),
+        NominalDeclaration::default(),
+    )
+    .unwrap()
+}
+
+/// Beat 1, Time 2 (1 s = 4 beat), Length 7, Foot 8; derived Time^2 (3),
+/// Time^-1 (4), Time * Foot^-1 (5), unlisted by default.
+fn derived_graph() -> UnitGraph {
+    let base = || DimensionNode::checked(vec![], NominalDeclaration::default()).unwrap();
+    UnitGraph::from_checked_nodes(
+        &BTreeMap::from([
+            (key(1), base()),
+            (key(2), base()),
+            (key(3), derived(vec![(2, 2)])),
+            (key(4), derived(vec![(2, -1)])),
+            (key(5), derived(vec![(2, 1), (8, -1)])),
+            (key(7), base()),
+            (key(8), base()),
+        ]),
+        &BTreeMap::from([
+            (key(11), unit(1, None, 1, 1, 0)),
+            (key(21), unit(2, None, 1, 1, 0)),
+            (key(31), unit(3, None, 1, 1, 0)),
+            (key(41), unit(4, None, 1, 1, 0)),
+            (key(51), unit(5, None, 1, 1, 0)),
+            (key(71), unit(7, None, 1, 1, 0)),
+            (key(81), unit(8, None, 1, 1, 0)),
+        ]),
+    )
+    .unwrap()
+}
+fn base_rows() -> Vec<(NodeKey, NodeKey, Rational)> {
+    vec![
+        (key(1), key(1), rat(1, 1)),
+        (key(2), key(1), rat(4, 1)),
+        (key(7), key(7), rat(1, 1)),
+        (key(8), key(7), rat(3, 2)),
+    ]
+}
+fn canonical_scale(graph: &UnitGraph, unit: u64) -> Rational {
+    graph.unit(key(unit)).unwrap().canonical().scale().clone()
+}
+
+#[trace("TC-931", "FR-134-AC-7")]
+#[test]
+fn dimension_equivalence_derived_root_scales_are_products_of_base_class_scales() {
+    let projected = derived_graph()
+        .with_dimension_equivalences(&base_rows())
+        .unwrap();
+    // 1 s = 4 beat, so 1 s2 = 16 beat2 though Time^2 has no membership row.
+    assert_eq!(canonical_scale(&projected, 31), rat(16, 1));
+    // Negative exponent.
+    assert_eq!(canonical_scale(&projected, 41), rat(1, 4));
+    // Two classes, rational class scale: 4 * (3/2)^-1.
+    assert_eq!(canonical_scale(&projected, 51), rat(8, 3));
+    // Base roots are untouched; no derived root is listed.
+    assert_eq!(canonical_scale(&projected, 21), rat(4, 1));
+    assert_eq!(canonical_scale(&projected, 11), rat(1, 1));
+    // No equivalence rows: scale one, unchanged.
+    assert_eq!(canonical_scale(&derived_graph(), 31), rat(1, 1));
+}
+
+#[trace("TC-931", "FR-134-AC-7")]
+#[test]
+fn dimension_equivalence_derived_root_scale_reaches_the_compound_pivot() {
+    let graph = derived_graph()
+        .with_dimension_equivalences(&base_rows())
+        .unwrap();
+    let table = UnitTable::declared(&graph);
+    let seconds = q(&table, 1, 1, 21);
+    let (Outcome::Completed(product), unit) = evaluate_quantity_unit(
+        QuantityOperation::Multiply(
+            table.resolve(&seconds).unwrap(),
+            table.resolve(&seconds).unwrap(),
+        ),
+        &mut meter(),
+    )
+    .unwrap() else {
+        panic!("product completes")
+    };
+    assert_eq!(product.magnitude(), &rat(16, 1));
+    let mut scope = UnitScope::new(&table);
+    let id = scope.form(unit);
+    let formed = scope.into_formed();
+    let compound = Quantity::new(product.magnitude().clone(), id);
+    let mut combined = UnitTable::declared(&graph);
+    combined.append(formed);
+    let converted = exact(convert(&combined, &compound, 31, &mut meter()));
+    assert_eq!(converted.canonical(), &rat(16, 1));
+    let (value, _) = converted.identified_quantity().unwrap();
+    assert_eq!(value.magnitude(), &rat(1, 1));
+}
+
+#[trace("TC-931", "FR-134-AC-7")]
+#[test]
+fn dimension_equivalence_listed_derived_root_must_agree_with_its_base_roots() {
+    let mut rows = base_rows();
+    rows.extend([(key(3), key(3), rat(1, 1)), (key(4), key(4), rat(1, 1))]);
+    // Representatives of their own classes: the coherent scale still applies.
+    let agreeing = derived_graph().with_dimension_equivalences(&rows).unwrap();
+    assert_eq!(canonical_scale(&agreeing, 31), rat(16, 1));
+    assert_eq!(canonical_scale(&agreeing, 41), rat(1, 4));
+    // A listed non-representative derived root with the product scale is
+    // admitted: Time^2 against a larger-keyed derived Time^2 member.
+    let graph = UnitGraph::from_checked_nodes(
+        &BTreeMap::from([
+            (
+                key(1),
+                DimensionNode::checked(vec![], NominalDeclaration::default()).unwrap(),
+            ),
+            (
+                key(2),
+                DimensionNode::checked(vec![], NominalDeclaration::default()).unwrap(),
+            ),
+            (key(3), derived(vec![(1, 2)])),
+            (key(4), derived(vec![(2, 2)])),
+        ]),
+        &BTreeMap::from([
+            (key(11), unit(1, None, 1, 1, 0)),
+            (key(21), unit(2, None, 1, 1, 0)),
+            (key(31), unit(3, None, 1, 1, 0)),
+            (key(41), unit(4, None, 1, 1, 0)),
+        ]),
+    )
+    .unwrap();
+    let rows = |scale: i64| {
+        vec![
+            (key(1), key(1), rat(1, 1)),
+            (key(2), key(1), rat(4, 1)),
+            (key(3), key(3), rat(1, 1)),
+            (key(4), key(3), rat(scale, 1)),
+        ]
+    };
+    let admitted = graph.with_dimension_equivalences(&rows(16)).unwrap();
+    assert_eq!(canonical_scale(&admitted, 41), rat(16, 1));
+    // A listed derived root that contradicts the product of its base roots
+    // is refused as an incompatible class (FSpec FR-142 step 6).
+    let refusal = graph.with_dimension_equivalences(&rows(4)).unwrap_err();
+    assert_eq!(refusal.dimension, key(4));
+    assert_eq!(refusal.cause, Cause::IncompatibleClass);
+}

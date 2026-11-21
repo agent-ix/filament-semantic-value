@@ -286,12 +286,7 @@ fn nested_float_record_equality_evaluates_numeric_leaves() {
     );
     let nan = 0x7ff8_0000_0000_0000;
     assert_eq!(
-        equality.evaluate(
-            &environment,
-            &record(nan),
-            &record(nan),
-            &mut meter(10_000),
-        ),
+        equality.evaluate(&environment, &record(nan), &record(nan), &mut meter(10_000),),
         Outcome::Completed(false)
     );
 }

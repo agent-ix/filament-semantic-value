@@ -76,7 +76,8 @@ impl UnitGraph {
             .iter()
             .map(|(key, map)| (key.clone(), normalize(map, &base_classes)))
             .collect();
-        self.check_equivalences(members, &dimensions)?;
+        let coherence = self.coherent_scales(&original, &base_classes, members);
+        self.check_equivalences(members, &dimensions, &coherence)?;
         let nominal_units = self.nominal_units.as_ref().unwrap_or(&self.units);
         let mut projected = self.clone();
         projected.units = nominal_units.clone();
@@ -105,6 +106,21 @@ impl UnitGraph {
                         refusal(representative, DimensionEquivalenceCause::MissingRoot)
                     })?;
                 }
+            }
+            // A derived class root is coherent with the product of its base
+            // class roots at their exponents, listed or not.
+            let class_root = unit.conversion_class.clone();
+            if let Some(scale) = coherence
+                .get(&class_root)
+                .filter(|scale| **scale != Rational::from_integer(Integer::one()))
+            {
+                let edge =
+                    UnitEdge::from_admitted(scale.clone(), Rational::from_integer(Integer::zero()));
+                unit.canonical = unit
+                    .canonical
+                    .followed_by(&edge, &mut UnmeteredAffine)
+                    .unwrap_or_else(|never| match never {});
+                unit.path.push(edge);
             }
         }
         Ok(projected)
@@ -149,6 +165,43 @@ impl UnitGraph {
             .collect()
     }
 
+    /// For each derived dimension, the size of its canonical root in the
+    /// product of its base-class roots at their exponents: the product of the
+    /// base classes' root scales raised to the exponents, exactly.
+    fn coherent_scales(
+        &self,
+        original: &BTreeMap<NodeKey, Dimension>,
+        base_classes: &BTreeMap<NodeKey, NodeKey>,
+        members: &[(NodeKey, NodeKey, Rational)],
+    ) -> BTreeMap<NodeKey, Rational> {
+        let one = Rational::from_integer(Integer::one());
+        let row_scale = |key: &NodeKey| {
+            members
+                .iter()
+                .find(|row| &row.0 == key)
+                .map_or_else(|| one.clone(), |row| row.2.clone())
+        };
+        let base_scale = |base: &NodeKey| {
+            let class = base_classes.get(base).unwrap_or(base);
+            row_scale(base)
+                .div(&row_scale(class))
+                .unwrap_or_else(|| one.clone())
+        };
+        original
+            .iter()
+            .filter(|(key, _)| !self.is_base(key))
+            .map(|(key, map)| {
+                let scale = map.0.iter().fold(one.clone(), |scale, (base, exponent)| {
+                    let factor = base_scale(base)
+                        .pow(exponent)
+                        .unwrap_or_else(|| one.clone());
+                    scale.mul(&factor)
+                });
+                (key.clone(), scale)
+            })
+            .collect()
+    }
+
     fn nominal_root(&self, dimension: &NodeKey) -> Option<NodeKey> {
         self.nominal.values().find_map(|node| match &node.form {
             NominalUnitForm::Unit {
@@ -164,6 +217,7 @@ impl UnitGraph {
         &self,
         members: &[(NodeKey, NodeKey, Rational)],
         dimensions: &BTreeMap<NodeKey, Dimension>,
+        coherence: &BTreeMap<NodeKey, Rational>,
     ) -> Result<(), DimensionEquivalenceRefusal> {
         use DimensionEquivalenceCause as Cause;
         let mut seen = BTreeSet::new();
@@ -210,6 +264,14 @@ impl UnitGraph {
                 })
             {
                 return Err(refusal(dimension, Cause::IncompatibleClass));
+            }
+            // A derived member's root scale is fixed by the base roots: its
+            // coherent scale divided by the representative's.
+            if let Some(coherent) = coherence.get(dimension) {
+                let class = coherence.get(representative).unwrap_or(&one);
+                if coherent.div(class).as_ref() != Some(scale) {
+                    return Err(refusal(dimension, Cause::IncompatibleClass));
+                }
             }
         }
         Ok(())
