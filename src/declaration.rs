@@ -3355,10 +3355,11 @@ impl TypeEnvironment {
 
     /// Check a type named outside a declaration (a parameter or result type):
     /// every `Composite` key names an admitted composite declaration,
-    /// every `Reference<T>` names an admitted model object type, and no set,
-    /// bag or ordered set has an IEEE-bearing element type. Enum declarations
-    /// are checked against the filament-spec-language checker's admitted scope;
-    /// this environment does not hold or check them.
+    /// every `Reference<T>` names an admitted model object type, and populations
+    /// are refused. IEEE-bearing set, bag and ordered-set elements are admitted
+    /// unless the element type also contains a `Map` at any depth.
+    /// Enum declarations are checked against the filament-spec-language checker's
+    /// admitted scope; this environment does not hold or check them.
     /// Storage failures retain the native reservation request and allocate no
     /// diagnostic payload. The environment and input remain unchanged.
     pub fn try_check_type(&self, value_type: &ValueType) -> Result<(), TypeCheckError> {
