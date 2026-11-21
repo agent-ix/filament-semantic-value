@@ -64,14 +64,12 @@ identity and no value; both belong to QExact.
    `Map` link exactly as for a `Collection` link.
 2. **Map is not refused for IEEE content.** `filament-semantic-value` SHALL NOT
    refuse in its declaration type-refusal walk a `Map` whose value type contains `Float32` or `Float64`.
-   The existing refusal of IEEE content under `Set`, `Bag` and other
-   non-`Sequence` collection kinds exists because those kinds deduplicate,
-   order or key their elements by element equality; a map's keys are `Text`,
-   its values are neither deduplicated, ordered nor keyed, and a map therefore
-   behaves like a `Sequence` here. `Map<Text, Float64>` is a valid declared
-   type. A `Set` or `Bag` whose element is a map over floats remains refused,
-   because its element `contains_ieee` (Behavior 1) and the existing rule
-   applies to the collection, not to the map.
+   `Map<Text, Float64>` is a valid declared type. QSpec FR-149 admits
+   IEEE-bearing `Set`, `Bag` and `OrderedSet` elements, using `bitIdentical`
+   for float leaves within members. The declaration walk SHALL retain
+   `OperatorIneligible` for a non-`Sequence` collection whose element type
+   contains both a `Map` and an IEEE float at any depth. A `Set` or `Bag`
+   whose element is a map over floats therefore remains refused.
 3. **Map in the declaration type-refusal walk.** `filament-semantic-value` SHALL,
    in its type-refusal walk, plain and metered, push a `Map` link's value type and apply every refusal to
    it that it applies inside `Option` and `Collection`: a `Population` inside a
@@ -225,7 +223,7 @@ identity and no value; both belong to QExact.
 | ID | Criteria | Verification |
 | --- | --- | --- |
 | FR-127-AC-1 | `contains_ieee` and its metered form return true for `Map<Text, Float64>`, `Option<Map<Text, Float32>>`, `Map<Text, Option<Sequence<Float64>>>` and a record field of such a type, and false for `Map<Text, Integer>`, `Map<Text, BoundedQuantity>` and a map of a record without a float. The metered form's charge for a `Map` link equals its charge for the corresponding `Collection` link. | Test (TC-927) |
-| FR-127-AC-2 | Declaring a record field of type `Map<Text, Float64>`, `Option<Map<Text, Float32>>` and `Sequence<Map<Text, Float64>>` is accepted in plain and metered declaration admission, while `Set<Map<Text, Float64>>` is refused `OperatorIneligible` by the existing non-`Sequence` rule. | Test (TC-927) |
+| FR-127-AC-2 | Declaring a record field of type `Map<Text, Float64>`, `Option<Map<Text, Float32>>` and `Sequence<Map<Text, Float64>>` is accepted in plain and metered declaration admission, while `Set<Map<Text, Float64>>` is refused `OperatorIneligible` because its element type contains both a `Map` and an IEEE float. | Test (TC-927) |
 | FR-127-AC-3 | A `Map` whose value type is `Population`, `Option<Population>` or `Sequence<Population>` is refused `OperatorIneligible`; one whose value type is an unregistered `Composite` is refused `UnknownDeclaration` with that key; one whose value type is a `Reference` to a non-object type is refused `Type(TypeMismatch)`; each in the plain and the metered walk with the same cause, and the same type inside `Option` and `Collection` gives the same cause. | Test (TC-927) |
 | FR-127-AC-4 | A union member position of `Map<Text, Integer>`, `Option<Map<Text, Composite>>` and `Map<Text, Map<Text, Boolean>>` is walked to its leaf without error, charging one unit per link; a work budget one unit below that charge stops with the established work limit. | Test (TC-927) |
 | FR-127-AC-5 | A record that refers to itself only through `Map<Text, Self>` and through `Map<Text, Self>[0, 4]` is accepted; one that refers to itself only through `Map<Text, Self>[1, 4]` is refused as a non-escaping cycle, as `Sequence<Self>[1, 4]` is; `Option<Map<Text, Self>[1, 4]>` is accepted because the `Option` escapes; and a named edge reached through a map keeps its recorded name. | Test (TC-927) |

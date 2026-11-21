@@ -7,6 +7,8 @@ relationships:
     type: references
   - target: ix://agent-ix/filament-semantic-value/FR-115
     type: references
+  - target: ix://agent-ix/filament-specification/FR-149
+    type: references
 ---
 # FR-132: Check external types with fallible storage
 
@@ -49,9 +51,12 @@ and reservation capacity overflow without retaining partial checking state.
 4. When reservations succeed, FSV SHALL preserve the external-type check's
    existing traversal and semantic results: admitted composite keys and
    sealed union handles resolve; unknown composites and non-object reference
-   targets yield `TypeMismatch`; populations and non-sequence collections
-   with IEEE-bearing elements yield `OperatorIneligible`; option payloads,
-   collection elements and map values retain their existing traversal.
+   targets yield `TypeMismatch`; populations yield `OperatorIneligible`.
+   FSV SHALL admit IEEE-bearing set, bag and ordered-set elements under
+   QSpec FR-149, except that FSV SHALL refuse a non-sequence collection whose
+   element type contains both a `Map` and an IEEE float at any depth with
+   `OperatorIneligible`. Option payloads, collection elements and map
+   values retain their existing traversal.
    Enum scope remains the caller's responsibility. Nested IEEE discovery
    SHALL preserve its existing record, tuple, union-member and cycle behavior.
 5. When the check returns success, semantic refusal, or storage failure, FSV SHALL
@@ -63,7 +68,7 @@ and reservation capacity overflow without retaining partial checking state.
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-132-AC-1 | Public `try_check_type` returns success for admitted leaves, references, composites, sealed union handles, nested options, sequences and maps; unknown composites and non-object references return `Refused(IllTyped { cause: TypeMismatch })`, and populations and IEEE-bearing set/bag/ordered-set elements return `Refused(IllTyped { cause: OperatorIneligible })`, preserving the previous external-type traversal's outcomes. | Test |
+| FR-132-AC-1 | Public `try_check_type` returns success for admitted leaves, references, composites, sealed union handles, nested options, sequences, maps and IEEE-bearing set/bag/ordered-set elements without a nested `Map`; unknown composites and non-object references return `Refused(IllTyped { cause: TypeMismatch })`. Populations and non-sequence collections whose element type contains both a `Map` and an IEEE float at any depth return `Refused(IllTyped { cause: OperatorIneligible })`. | Test |
 | FR-132-AC-2 | A dedicated test binary denies a real allocator request while public `try_check_type` runs, after fixture construction. The call returns `Allocation` with the failing reservation's measured request and unit, and the process completes without aborting. Real denials cover the root worklist and nested IEEE discovery's worklist/visited storage; policy-only injection is not a substitute. | Test |
 | FR-132-AC-3 | Checked reservation-size overflow returns `Capacity` with its request and native unit, distinct from `Allocation` and `Refused`; controlled tests exercise the same reservation boundary used by the public check. | Test |
 | FR-132-AC-4 | After each controlled storage denial, retrying the same type against the same environment after restoring allocation yields its original success or semantic refusal; declaration lookups and the supplied type are unchanged and no partial checking result is exposed. | Test |
@@ -77,5 +82,8 @@ and reservation capacity overflow without retaining partial checking state.
   it does not fabricate an invalid declaration or environment budget.
 - [FR-115](./FR-115-stage-and-seal-union-declarations.md) owns sealed union
   handle admission. This check preserves the existing handle lookup.
+- [QSpec FR-149](ix://agent-ix/filament-specification/FR-149) admits
+  float-bearing collections and defines `bitIdentical` float-leaf comparison
+  within set, bag and ordered-set members.
 - Downstream callers own projection into their checker/runtime refusal types;
   this requirement does not change equality checking or other public helpers.
