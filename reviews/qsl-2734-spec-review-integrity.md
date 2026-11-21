@@ -122,3 +122,14 @@ FSpec FR-142, Dimension equivalence admission step 6, applies to every pair whos
 
 quire 0.52.0 (engine 0.62.2), quoin 0.36.7. Changed documents validate grammar-clean. Full spec validation exits0 with seven pre-existing warnings in FR-110/121/132. Computed matrix inspected: FR-134 AC1-7 each has no runtime binder yet; implementation evidence remains pending by design. No tests, full gate or human-acceptance workflow was run or claimed.
 
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Round 1: inspected cea40266d54c7c0c53110b244f1b7205fa0047eb; blanket mixed-class refusal removed, base normalization separated from general conversion-class representatives, and positive Time/Dur plus incompatible Time/Area fixtures added. |
+
+## Disposition round 1 assessment
+
+Current verdict: PASS; PR117 is mergeable for this specification stage, subject to custody of these updated review artifacts. Inspected fix head cea40266d54c7c0c53110b244f1b7205fa0047eb. FR-134 Behavior 1 admits mixed base/derived classes with equal normalized maps and caller-admitted base-implied ratios. Behavior 2 uses only base members to normalize dimension maps, independently of the general conversion-class representative. AC-7 and TC-931 now require Time/Dur conversion, including a derived least-key representative, plus incompatible Time/Area refusal. This matches FSpec FR-142 admission step 6 and its Effect distinction. No new findings were found in the changed specification or original methods' scope. Runtime implementation and FSL consumer acceptance remain pending.
+
+Changed-document validation exits 0: 2/2 grammar-clean, 0 grammar findings. The committed original review copies have extra EOF blank lines reported by git diff --check; these scratch copies normalize only trailing EOF whitespace while preserving original finding text. Copying these updated artifacts and the final diff-check remain lead/author custody work. No builds, tests, branch edits or merges performed. Original findings and review-pass scope remain unchanged historical evidence.
