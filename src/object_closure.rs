@@ -260,8 +260,10 @@ impl ObjectClosure {
                 Value::Composite(composite) => pending.extend(present(composite.slots())),
                 Value::Collection(collection) => pending.extend(collection.elements()),
                 Value::Union(union) => pending.extend(union.payload()),
-                // A clock-place reference names a clock place, not an object, so it
-                // adds no closure edge and has no target to dangle.
+                // A clock-place reference names a clock place, not an object. Its place
+                // id names an owner object, but the owner-existence check belongs to
+                // the caller (QExact FR-415 Behavior 3; FSL FR-230, FR-106), so it
+                // adds no closure edge here.
                 Value::ClockReference(_)
                 | Value::Reference(_)
                 | Value::Boolean(_)

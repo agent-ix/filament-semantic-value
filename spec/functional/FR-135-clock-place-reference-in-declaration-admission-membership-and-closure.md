@@ -25,14 +25,15 @@ relationships:
 
 `filament-exact` carries a `Reference<Clock>` as the distinct kernel type
 `ValueType::ClockReference` and value `Value::ClockReference` (QExact FR-415).
-`filament-semantic-value` SHALL add no rule of its own for it: it SHALL admit
-`ValueType::ClockReference` wherever QExact FR-415 admits it and SHALL let it
-behave as QExact FR-415 states, with the kernel deciding equality, order, key
-use and the foreign-reference refusal. For declaration admission and supplied
-membership it is a leaf, like `ValueType::Reference`, with no object-type
-target to resolve. For object closure it adds no edge: a clock-place reference
-names a clock place, not an object, so it has no target object that could be
-present or dangling.
+`filament-semantic-value` adds no rule of its own for it. The crate SHALL admit
+`ValueType::ClockReference` wherever QExact FR-415 admits it. The kernel
+decides equality, order, key use and the foreign-reference refusal as QExact
+FR-415 states. For declaration admission and supplied membership it is a leaf,
+like `ValueType::Reference`, with no object-type target to resolve. For object
+closure it adds no edge: a clock-place reference names a clock place, not an
+object, and the place id names its owner object (component K in population P),
+whose existence QExact FR-415 Behavior 3 leaves to the caller (FSL FR-230 and
+FR-106), so the closure has nothing to check for it.
 
 A clock-place reference is a data value that names a clock place. It is not a
 clock, so [FR-133](./FR-133-hold-the-data-part-of-clock-bearing-composites.md)
@@ -55,7 +56,8 @@ composite is still projected away before declaration.
 1. **Declaration admission.** `ValueType::ClockReference` SHALL be an admitted
    member type of a record field, tuple position, union payload position and
    object attribute, and an admitted type link under `Option`, `Collection` and
-   `Map`. It names no declaration, so admission SHALL NOT refuse it
+   `Map`, and a `Map` key type and a `Set` element type. It names no
+   declaration, so admission SHALL NOT refuse it
    `UnknownDeclaration` or an unknown object type, SHALL add no recursion edge,
    and `runtime_type` SHALL return it unchanged. It contains no `Float` and no
    `Map` link of its own.
@@ -89,10 +91,10 @@ composite is still projected away before declaration.
 
 | ID | Criteria | Verification |
 | --- | --- | --- |
-| FR-135-AC-1 | An environment declaring a record with fields `r: ClockReference`, `o: Option<ClockReference>`, `s: Sequence<ClockReference>` and `m: Map<String, ClockReference>`, an object type with attribute `r: ClockReference`, a tuple `(ClockReference)` and a union member with one `ClockReference` position admits; `runtime_type(ClockReference)` returns `ClockReference` and `runtime_type(Option<ClockReference>)` returns `Option<ClockReference>`; `contains_ieee` is false for each. | Test |
+| FR-135-AC-1 | An environment declaring a record with fields `r: ClockReference`, `o: Option<ClockReference>`, `s: Sequence<ClockReference>`, `m: Map<String, ClockReference>`, `e: Set<ClockReference>` and `k: Map<ClockReference, Integer>`, an object type with attribute `r: ClockReference`, a tuple `(ClockReference)` and a union member with one `ClockReference` position admits; `runtime_type(ClockReference)` returns `ClockReference` and `runtime_type(Option<ClockReference>)` returns `Option<ClockReference>`; `contains_ieee` is false for each. | Test |
 | FR-135-AC-2 | `admits(ClockReference, v)` is true for a clock-place reference and false for an object `Value::Reference`, a `String` holding the same characters and an `Integer`; `admits(Reference(t), clock_reference)` is false. Supplied membership of the same values reports `Kind` at the value for each refused pair and succeeds for the admitted ones, including a `Sequence<ClockReference>` of two references and an `Option<ClockReference>`. | Test |
 | FR-135-AC-3 | `check_equality` of two `ClockReference` operands succeeds and its evaluation returns `false` for two texts that differ in `K` in one universe, `true` for one text in one universe and `ForeignReference` for one text in two universes; `check_equality` of `ClockReference` against `Reference(t)` is refused `TypeMismatch`. | Test |
-| FR-135-AC-4 | An `ObjectClosure` of one object whose attribute is a clock-place reference, one whose attribute is `Option<ClockReference>` present, and one whose attribute is a `Map<String, ClockReference>` admits with no other object supplied, holds exactly one object, reads the reference back unchanged, and equals a second closure built from an equal reference and differs from one built from a reference of another place. | Test |
+| FR-135-AC-4 | An `ObjectClosure` of one object whose attribute is a clock-place reference, one whose attribute is `Option<ClockReference>` present, and one whose attribute is a `Map<String, ClockReference>` admits with no other object supplied, holds exactly one object, reads the reference back unchanged, and equals a second closure built from an equal reference and differs from one built from a reference of another place and from one built from the same text in another universe. | Test |
 | FR-135-AC-5 | Inspection finds an explicit `ClockReference` arm, with no wildcard, in every exhaustive variant-listing match over `ValueType` or `Value` in `declaration`, `declaration/membership` and `object_closure`, and finds no clock-specific equality, ordering or size rule of this crate. | Inspection |
 
 ## Dependencies

@@ -62,6 +62,17 @@ fn sequence_of_clock() -> ValueType {
     ))
 }
 
+fn set_of_clock() -> ValueType {
+    ValueType::collection(CollectionType::new(CollectionKind::Set, clock_type(), None))
+}
+
+fn clock_keyed_map() -> ValueType {
+    ValueType::map(
+        MapType::new(clock_type(), ValueType::Integer, None)
+            .expect("a clock reference is a leaf key"),
+    )
+}
+
 fn map_of_clock() -> ValueType {
     ValueType::map(MapType::new(ValueType::String, clock_type(), None).expect("leaf key admits"))
 }
@@ -105,6 +116,8 @@ fn declaring_environment() -> Result<TypeEnvironment, EnvironmentFailure> {
                     FieldDeclaration::new("o", ValueType::option(clock_type()), Presence::Required),
                     FieldDeclaration::new("s", sequence_of_clock(), Presence::Required),
                     FieldDeclaration::new("m", map_of_clock(), Presence::Required),
+                    FieldDeclaration::new("e", set_of_clock(), Presence::Required),
+                    FieldDeclaration::new("k", clock_keyed_map(), Presence::Required),
                 ]),
             ),
             CompositeDeclaration::new(
@@ -131,7 +144,14 @@ fn clock_reference_is_an_admitted_leaf_in_every_declaration_position() {
     assert_eq!(environment.runtime_type(&clock_type()), Some(clock_type()));
     let optional = ValueType::option(clock_type());
     assert_eq!(environment.runtime_type(&optional), Some(optional.clone()));
-    for ty in [clock_type(), optional, sequence_of_clock(), map_of_clock()] {
+    for ty in [
+        clock_type(),
+        optional,
+        sequence_of_clock(),
+        map_of_clock(),
+        set_of_clock(),
+        clock_keyed_map(),
+    ] {
         assert!(!environment.contains_ieee(&ty));
     }
 }
@@ -339,6 +359,11 @@ fn clock_references_add_no_object_closure_edge() {
     ));
     assert_eq!(admitted, holder_closure(&bare, clock(one.clone(), "c/d")));
     assert_ne!(admitted, holder_closure(&bare, other_place.clone()));
+    // The same place id text in another universe is another reference.
+    assert_ne!(
+        admitted,
+        holder_closure(&bare, clock(common::universe(2), "c/d"))
+    );
 
     let optional = holder_types(ValueType::option(clock_type()));
     let present = |value: &Value| OptionValue::from_admitted(clock_type(), Some(value.clone()));
