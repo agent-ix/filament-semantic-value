@@ -1,0 +1,35 @@
+{
+  "figures": [
+    {
+      "id": "hero",
+      "width": 980, "height": 330,
+      "label": "A quantity is an exact magnitude plus a unit id. A unit table resolves the id to a dimension and a conversion path. An operation first type-checks the units; mismatched dimensions are ill-typed and consume nothing. Otherwise it is evaluated under a meter and ends as completed (a value plus any loss record), undefined, refused or incomplete.",
+      "items": [
+        {"k":"box","at":[0,10,200,56],"role":"ink","title":"quantity a","subs":["exact magnitude · unit id"]},
+        {"k":"box","at":[0,90,200,56],"role":"ink","title":"quantity b","subs":["exact magnitude · unit id"]},
+        {"k":"box","at":[0,200,200,56],"role":"model","title":"unit table","subs":["id → dimension · path"]},
+        {"k":"box","at":[270,90,170,56],"role":"logic","title":"type check","subs":["same dimension?"]},
+        {"k":"line","points":[[200,38],[235,38],[235,108],[267,108]]},
+        {"k":"line","points":[[200,118],[267,118]]},
+        {"k":"line","points":[[200,228],[235,228],[235,128],[267,128]],"role":"model"},
+        {"k":"box","at":[270,220,170,56],"role":"evidence","title":"ill-typed","subs":["nothing charged"]},
+        {"k":"line","points":[[355,146],[355,217]],"role":"evidence"},
+        {"k":"box","at":[510,90,170,56],"role":"logic","title":"evaluate","subs":["exact · under a meter"]},
+        {"k":"line","points":[[440,118],[507,118]],"role":"logic"},
+        {"k":"line","points":[[680,118],[705,118]],"role":"logic","arrow":false},
+        {"k":"line","points":[[705,38],[705,296]],"role":"logic","arrow":false},
+        {"k":"line","points":[[705,38],[737,38]],"role":"logic"},
+        {"k":"box","at":[740,10,240,56],"role":"logic","title":"completed","subs":["value · loss records"]},
+        {"k":"line","points":[[705,124],[737,124]],"role":"evidence"},
+        {"k":"box","at":[740,96,240,56],"role":"evidence","title":"undefined","subs":["no value exists"]},
+        {"k":"line","points":[[705,210],[737,210]],"role":"evidence"},
+        {"k":"box","at":[740,182,240,56],"role":"evidence","title":"refused","subs":["input rejected"]},
+        {"k":"line","points":[[705,296],[737,296]],"role":"evidence"},
+        {"k":"box","at":[740,268,240,56],"role":"evidence","title":"incomplete","subs":["meter ran out"]},
+        {"k":"legend","at":[0,326],"entries":[["ink","input","box"],["logic","compiler stage","box"],["model","checked package / IR","box"],["evidence","outcome","box"]]}
+      ]
+    },
+    {"id":"ecosystem","construct":{"name":"ecosystem","here":"filament-semantic-value"}}
+  ]
+}
+
