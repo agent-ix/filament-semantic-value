@@ -2659,6 +2659,7 @@ impl TypeEnvironment {
                                 | ValueType::Enum(_)
                                 | ValueType::Composite(_)
                                 | ValueType::Reference(_)
+                                | ValueType::ClockReference
                                 | ValueType::Population(_) => break,
                             }
                         }
@@ -3068,6 +3069,7 @@ impl TypeEnvironment {
                 | ValueType::Enum(_)
                 | ValueType::Composite(_)
                 | ValueType::Reference(_)
+                | ValueType::ClockReference
                 | ValueType::Population(_) => break,
             }
         }
@@ -3117,6 +3119,7 @@ impl TypeEnvironment {
                 | ValueType::Enum(_)
                 | ValueType::Composite(_)
                 | ValueType::Reference(_)
+                | ValueType::ClockReference
                 | ValueType::Population(_) => return None,
             };
         }
@@ -3425,6 +3428,7 @@ impl TypeEnvironment {
                 | ValueType::Timestamp
                 | ValueType::Enum(_)
                 | ValueType::Reference(_)
+                | ValueType::ClockReference
                 | ValueType::Population(_) => {}
             }
         }
@@ -3504,6 +3508,7 @@ impl TypeEnvironment {
                 | ValueType::Timestamp
                 | ValueType::Enum(_)
                 | ValueType::Reference(_)
+                | ValueType::ClockReference
                 | ValueType::Population(_) => {}
             }
         }
@@ -3581,6 +3586,7 @@ impl TypeEnvironment {
                 | ValueType::Timestamp
                 | ValueType::Enum(_)
                 | ValueType::Reference(_)
+                | ValueType::ClockReference
                 | ValueType::Population(_) => {}
             }
         }
@@ -3655,7 +3661,8 @@ impl TypeEnvironment {
                 | ValueType::Timestamp
                 | ValueType::Enum(_)
                 | ValueType::Composite(_)
-                | ValueType::Reference(_) => {}
+                | ValueType::Reference(_)
+                | ValueType::ClockReference => {}
             }
         }
         Ok(None)
@@ -3830,6 +3837,7 @@ impl TypeEnvironment {
                     | ValueType::Timestamp
                     | ValueType::Enum(_)
                     | ValueType::Reference(_)
+                    | ValueType::ClockReference
                     | ValueType::Population(_) => {}
                 }
             }
@@ -5706,6 +5714,7 @@ fn top_level_unit(value_type: &ValueType) -> Option<UnitId> {
         | ValueType::Collection(_)
         | ValueType::Map(_)
         | ValueType::Reference(_)
+        | ValueType::ClockReference
         | ValueType::Population(_) => None,
     }
 }
@@ -5736,6 +5745,7 @@ fn bounded_read(value_type: &ValueType) -> Option<ValueType> {
         | ValueType::Collection(_)
         | ValueType::Map(_)
         | ValueType::Reference(_)
+        | ValueType::ClockReference
         | ValueType::Population(_) => None,
     }
 }
@@ -5843,6 +5853,7 @@ fn integer_source_admits(lower: &Integer, upper: &Integer, target: &ValueType) -
         | ValueType::Collection(_)
         | ValueType::Map(_)
         | ValueType::Reference(_)
+        | ValueType::ClockReference
         | ValueType::Population(_) => false,
     }
 }

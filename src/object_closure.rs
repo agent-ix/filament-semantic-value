@@ -260,7 +260,10 @@ impl ObjectClosure {
                 Value::Composite(composite) => pending.extend(present(composite.slots())),
                 Value::Collection(collection) => pending.extend(collection.elements()),
                 Value::Union(union) => pending.extend(union.payload()),
-                Value::Reference(_)
+                // A clock-place reference names a clock place, not an object, so it
+                // adds no closure edge and has no target to dangle.
+                Value::ClockReference(_)
+                | Value::Reference(_)
                 | Value::Boolean(_)
                 | Value::Integer(_)
                 | Value::Rational(_)
@@ -408,6 +411,7 @@ fn same_slots(left: &[FieldValue], right: &[FieldValue]) -> bool {
                 }
                 (Value::Map(_), Value::Map(_)) => same_map_value(a, b),
                 (Value::Reference(a), Value::Reference(b)) => a == b,
+                (Value::ClockReference(a), Value::ClockReference(b)) => a == b,
                 (Value::Bytes(a), Value::Bytes(b)) => a == b,
                 (Value::JsonObject(a), Value::JsonObject(b)) => a == b,
                 (Value::Boolean(_), _)
@@ -428,6 +432,7 @@ fn same_slots(left: &[FieldValue], right: &[FieldValue]) -> bool {
                 | (Value::Collection(_), _)
                 | (Value::Map(_), _)
                 | (Value::Reference(_), _)
+                | (Value::ClockReference(_), _)
                 | (Value::Bytes(_), _)
                 | (Value::JsonObject(_), _) => false,
             },
