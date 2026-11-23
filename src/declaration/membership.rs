@@ -182,6 +182,7 @@ fn leaf_cause(expected: &ValueType, value: &Value) -> InvalidMembershipCause {
             | ValueType::Composite(_)
             | ValueType::Collection(_)
             | ValueType::Reference(_)
+            | ValueType::ClockReference
             | ValueType::Bytes
             | ValueType::JsonObject
             | ValueType::Population(_),

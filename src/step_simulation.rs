@@ -14,7 +14,7 @@ use quire_canonical::{Encode, Error, Sink, Writer};
 
 /// One step row of a refinement declaration, named by its zero-based position
 /// in the declaration node's `steps` order, which is declaration order
-/// (QSpec FR-375; FSL FR-135 `steps`). No sort of any kind applies.
+/// (QSpec FR-375; ix://agent-ix/filament-spec-language/FR-135 `steps`). No sort of any kind applies.
 ///
 /// A refinement has exactly one row per concrete step class (FSL ADR-020
 /// RM-5), so a refinement key and a row position name one row.
