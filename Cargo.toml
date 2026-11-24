@@ -30,6 +30,7 @@ test-support = []
 fsv-failing-allocator = { path = "tests/failing-allocator" }
 allocation-counter = "0.8"
 ix-trace-rs = { version = "0.1", git = "https://github.com/agent-ix/ix-trace-rs", tag = "v0.1.2" }
+syn = { version = "3.0.6", features = ["full"] }
 
 [profile.release]
 lto = "thin"

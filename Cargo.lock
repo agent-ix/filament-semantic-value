@@ -99,6 +99,7 @@ dependencies = [
  "fsv-failing-allocator",
  "ix-trace-rs",
  "quire-canonical",
+ "syn",
  "thiserror",
 ]
 
