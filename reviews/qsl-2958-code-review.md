@@ -31,3 +31,10 @@ Inspected FR-119-AC-8 and AC-21/22/23, TC-919's ordered-position and read requir
 ## Dispositions
 
 Not applicable in the review pass.
+
+Disposition pass 1 rechecked fix commit `1d526802865f41bb791e12369909ed041fdfb398`; both source-side coverage gaps are fixed.
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | fixed | Added an ordered source-end extent with no source position and exact `MissingPosition { relationship: "housing", extent_index: 0, instance_index: 0, side: Source }` assertion at `tests/relationship_extents.rs:796-813`. |
+| FND-002 | fixed | Reversed the ordered source instance list, rebuilt the store, and asserted `sources("housing", t1)` equals the same expected `[p1, p2]` at `tests/relationship_extents.rs:925-947`. |

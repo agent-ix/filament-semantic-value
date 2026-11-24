@@ -33,3 +33,16 @@ Ran the repository-wide computed matrix and source/test stub scans. The changed 
 ## Coverage
 
 `quoin matrix --repo . --json`: 196 criteria; 8 untagged; 0 tagged only by ignored tests. The changed FR-119-AC-21/22/23 each bind to `tests/relationship_extents.rs`. The matrix had no run evidence bound to criteria. Scanned Rust source and tests for TODO/FIXME/XXX/todo!/unimplemented!: none found. Reviewed the changed FR-119 tests and implementation for intent/test/code alignment. Plan completion: not assessed.
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | deferred | Deferred to IR-1596. Adding evidence for FR-109-AC-6 is outside QSL-2958/PR #127, which changes relationship extent position behavior and does not modify FR-109 or its tests. |
+| FND-002 | deferred | Deferred to IR-1596. Adding evidence for FR-121-AC-6 is outside QSL-2958/PR #127, which changes relationship extent position behavior and does not modify FR-121 or its inspection/analysis evidence. |
+| FND-003 | deferred | Deferred to IR-1596. Adding evidence for FR-123-AC-6 is outside QSL-2958/PR #127, which changes relationship extent position behavior and does not modify FR-123 or its inspection/analysis evidence. |
+| FND-004 | deferred | Deferred to IR-1596. Adding evidence for FR-124-AC-6 is outside QSL-2958/PR #127, which changes relationship extent position behavior and does not modify FR-124 or its inspection/analysis evidence. |
+| FND-005 | deferred | Deferred to IR-1596. Adding evidence for FR-127-AC-14 is outside QSL-2958/PR #127, which changes relationship extent position behavior and does not modify FR-127 or its tests. |
+| FND-006 | deferred | Deferred to IR-1596. Adding evidence for FR-130-AC-1 is outside QSL-2958/PR #127, which changes relationship extent position behavior and does not modify FR-130 or its tests. |
+| FND-007 | deferred | Deferred to IR-1596. Adding evidence for FR-130-AC-3 is outside QSL-2958/PR #127, which changes relationship extent position behavior and does not modify FR-130 or its tests. |
+| FND-008 | deferred | Deferred to IR-1596. Adding evidence for FR-130-AC-4 is outside QSL-2958/PR #127, which changes relationship extent position behavior and does not modify FR-130 or its tests. |
