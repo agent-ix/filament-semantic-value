@@ -57,3 +57,11 @@ Ticket: QSL-2958. Reviewed the full FR-119 text and TC-919, including the new or
 ## Verdict
 
 FAIL. FR-119-AC-21 through AC-23 are concrete and consistent with FSL FR-364-AC-15/16 and TC-1902, but their required tagged test evidence is not yet present. FR-119-AC-24 is an Inspection criterion and appears as method-without-symbol; no coverage finding applies to it. No hash/digest/pin antipattern was found in the changed obligations. No code tests were run.
+
+## Dispositions
+
+| FND | outcome | reason |
+| --- | --- | --- |
+| FND-001 | deferred | Tagged implementation-test evidence is required in the downstream QSL-2958 code lane after FR-119 is accepted. This spec-only prerequisite PR has no code tests; the criterion remains unchanged and testable. |
+| FND-002 | deferred | Tagged implementation-test evidence is required in the downstream QSL-2958 code lane after FR-119 is accepted. This spec-only prerequisite PR has no code tests; the criterion remains unchanged and testable. |
+| FND-003 | deferred | Tagged implementation-test evidence is required in the downstream QSL-2958 code lane after FR-119 is accepted. This spec-only prerequisite PR has no code tests; the criterion remains unchanged and testable. |
