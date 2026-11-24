@@ -792,6 +792,25 @@ fn positions_are_checked_after_type_and_duplicate_instance_conditions() {
             earlier_instance_index: 0,
         })
     );
+
+    let missing_source_position = positioned_extent(
+        "housing",
+        true,
+        vec![RelationshipInstance {
+            source: reference(9, PUMP, "p1"),
+            target: reference(9, TANK, "t1"),
+            positions: RelationshipPositions::default(),
+        }],
+    );
+    assert_eq!(
+        RelationshipExtentStore::new(&types, &housing_table, [missing_source_position]),
+        Err(ExtentRefusal::MissingPosition {
+            relationship: "housing",
+            extent_index: 0,
+            instance_index: 0,
+            side: EndSide::Source,
+        })
+    );
 }
 
 #[trace("TC-919", "FR-119-AC-22", "FR-119-AC-23")]
@@ -900,15 +919,31 @@ fn ordered_target_and_source_reads_use_positions_scoped_to_the_opposite_end() {
     let source_store = RelationshipExtentStore::new(
         &types,
         &source_table,
-        [positioned_extent("housing", true, ordered_sources)],
+        [positioned_extent("housing", true, ordered_sources.clone())],
     )
     .unwrap();
+    let mut reversed_sources = ordered_sources;
+    reversed_sources.reverse();
+    let reordered_source_store = RelationshipExtentStore::new(
+        &types,
+        &source_table,
+        [positioned_extent("housing", true, reversed_sources)],
+    )
+    .unwrap();
+    let source_result = vec![p1, p2];
     assert_eq!(
         source_store
             .sources(&"housing", &t1)
             .cloned()
             .collect::<Vec<_>>(),
-        vec![p1, p2]
+        source_result
+    );
+    assert_eq!(
+        reordered_source_store
+            .sources(&"housing", &t1)
+            .cloned()
+            .collect::<Vec<_>>(),
+        source_result
     );
 }
 
