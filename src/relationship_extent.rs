@@ -27,6 +27,10 @@ pub struct RelationshipEnd {
     pub object_type: EffectiveId,
     /// Whether this end declares uniqueness.
     pub unique: bool,
+    /// Whether navigation over this end is ordered.
+    pub ordered: bool,
+    /// Whether this end can contain more than one value.
+    pub multi_valued: bool,
 }
 
 /// One model supplied navigation relationship.
@@ -130,8 +134,28 @@ pub struct RelationshipExtent<K> {
     pub relationship: K,
     /// Whether enumeration of this relationship was complete.
     pub complete: bool,
-    /// Full source and target reference pairs.
-    pub instances: Vec<(ObjectReference, ObjectReference)>,
+    /// Full relationship instances.
+    pub instances: Vec<RelationshipInstance>,
+}
+
+/// One model supplied relationship instance.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RelationshipInstance {
+    /// Full source reference.
+    pub source: ObjectReference,
+    /// Full target reference.
+    pub target: ObjectReference,
+    /// Optional ordered positions for each end.
+    pub positions: RelationshipPositions,
+}
+
+/// Optional source and target positions for an instance.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct RelationshipPositions {
+    /// Position for the source end, when ordered and multi-valued.
+    pub source: Option<u64>,
+    /// Position for the target end, when ordered and multi-valued.
+    pub target: Option<u64>,
 }
 
 /// Whether a relationship was listed, and whether its listed extent is complete.
@@ -190,6 +214,44 @@ pub enum ExtentRefusal<K> {
         /// Zero based instance index.
         instance_index: usize,
     },
+    /// An ordered multi-valued end lacks a position.
+    #[error("missing ordered relationship position")]
+    MissingPosition {
+        /// Relationship identity.
+        relationship: K,
+        /// Zero based extent index.
+        extent_index: usize,
+        /// Zero based instance index.
+        instance_index: usize,
+        /// End whose position is missing.
+        side: EndSide,
+    },
+    /// A position was supplied for an unordered or single-valued end.
+    #[error("unexpected relationship position")]
+    UnexpectedPosition {
+        /// Relationship identity.
+        relationship: K,
+        /// Zero based extent index.
+        extent_index: usize,
+        /// Zero based instance index.
+        instance_index: usize,
+        /// End with an unexpected position.
+        side: EndSide,
+    },
+    /// Two instances in the same opposite-end group have the same position.
+    #[error("duplicate relationship position")]
+    DuplicatePosition {
+        /// Relationship identity.
+        relationship: K,
+        /// Zero based extent index.
+        extent_index: usize,
+        /// Zero based instance index of the later occurrence.
+        instance_index: usize,
+        /// End whose position repeats.
+        side: EndSide,
+        /// Zero based instance index of the earlier occurrence.
+        earlier_instance_index: usize,
+    },
     /// A representable reservation was denied.
     #[error("extent allocation denied: {0:?}")]
     Allocation(StorageRequest),
@@ -199,11 +261,19 @@ pub enum ExtentRefusal<K> {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+struct StoredLink {
+    source: ObjectReference,
+    target: ObjectReference,
+    positions: RelationshipPositions,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 struct StoredExtent {
     complete: bool,
-    links: Vec<(ObjectReference, ObjectReference)>,
-    // A private, immutable permutation of 0..links.len(); every index is valid for links.
-    inverse: Vec<usize>,
+    links: Vec<StoredLink>,
+    // Private immutable permutations of 0..links.len(); every index is valid for links.
+    targets: Vec<usize>,
+    sources: Vec<usize>,
 }
 
 /// One transactionally admitted sequence of relationship extents.
@@ -247,105 +317,128 @@ impl<K: Ord + Clone> RelationshipExtentStore<K> {
                     extent_index,
                 });
             }
-            let mut first_mismatch = None;
-            for (instance_index, (source, target)) in instances.iter().enumerate() {
+            for (instance_index, instance) in instances.iter().enumerate() {
                 for (side, actual, declared) in [
                     (
                         EndSide::Source,
-                        source.object_type(),
+                        instance.source.object_type(),
                         source_end.object_type.clone(),
                     ),
                     (
                         EndSide::Target,
-                        target.object_type(),
+                        instance.target.object_type(),
                         target_end.object_type.clone(),
                     ),
                 ] {
                     if types.object_type(actual.clone()).is_none()
                         || !types.conforms(actual.clone(), declared.clone())
                     {
-                        first_mismatch = Some((
+                        return Err(ExtentRefusal::EndTypeMismatch {
+                            relationship,
+                            extent_index,
                             instance_index,
-                            ExtentRefusal::EndTypeMismatch {
-                                relationship: relationship.clone(),
-                                extent_index,
-                                instance_index,
-                                side,
-                                actual_type: actual.clone(),
-                                declared_type: declared,
-                            },
-                        ));
-                        break;
+                            side,
+                            actual_type: actual.clone(),
+                            declared_type: declared,
+                        });
                     }
                 }
-                if first_mismatch.is_some() {
-                    break;
-                }
-            }
-            // Only the valid prefix can contain a duplicate that precedes the first mismatch.
-            let checked_len = first_mismatch
-                .as_ref()
-                .map_or(instances.len(), |(instance_index, _)| *instance_index);
-            if source_end.unique || target_end.unique {
-                let mut triples = Vec::new();
-                if let Err(storage) = reserve_elements(&mut triples, checked_len, reservation) {
-                    // On a denied scratch reservation, preserve condition precedence.
-                    // This slow path is reached only when admission cannot reserve storage.
-                    for (instance_index, pair) in
-                        instances.iter().take(checked_len).enumerate().skip(1)
-                    {
-                        if instances
-                            .iter()
-                            .take(instance_index)
-                            .any(|prior| prior == pair)
-                        {
-                            return Err(ExtentRefusal::DuplicateTriple {
-                                relationship,
-                                extent_index,
-                                instance_index,
-                            });
-                        }
-                    }
-                    if let Some((_, mismatch)) = first_mismatch {
-                        return Err(mismatch);
-                    }
-                    return Err(extent_storage(storage));
-                }
-                triples.extend(
-                    instances
-                        .iter()
-                        .take(checked_len)
-                        .enumerate()
-                        .map(|(index, (source, target))| (source, target, index)),
-                );
-                triples.sort_unstable_by(|a, b| (a.0, a.1, a.2).cmp(&(b.0, b.1, b.2)));
-                let first_duplicate = triples
-                    .windows(2)
-                    .filter_map(|pair| {
-                        (pair[0].0 == pair[1].0 && pair[0].1 == pair[1].1).then_some(pair[1].2)
+                if (source_end.unique || target_end.unique)
+                    && instances.iter().take(instance_index).any(|prior| {
+                        prior.source == instance.source && prior.target == instance.target
                     })
-                    .min();
-                if let Some(instance_index) = first_duplicate {
+                {
                     return Err(ExtentRefusal::DuplicateTriple {
                         relationship,
                         extent_index,
                         instance_index,
                     });
                 }
-            }
-            if let Some((_, mismatch)) = first_mismatch {
-                return Err(mismatch);
+
+                for (side, end, position) in [
+                    (EndSide::Source, &source_end, instance.positions.source),
+                    (EndSide::Target, &target_end, instance.positions.target),
+                ] {
+                    if end.ordered && end.multi_valued {
+                        let Some(position) = position else {
+                            return Err(ExtentRefusal::MissingPosition {
+                                relationship,
+                                extent_index,
+                                instance_index,
+                                side,
+                            });
+                        };
+                        let earlier_instance_index = instances
+                            .iter()
+                            .take(instance_index)
+                            .position(|prior| match side {
+                                EndSide::Source => {
+                                    prior.target == instance.target
+                                        && prior.positions.source == Some(position)
+                                }
+                                EndSide::Target => {
+                                    prior.source == instance.source
+                                        && prior.positions.target == Some(position)
+                                }
+                            });
+                        if let Some(earlier_instance_index) = earlier_instance_index {
+                            return Err(ExtentRefusal::DuplicatePosition {
+                                relationship,
+                                extent_index,
+                                instance_index,
+                                side,
+                                earlier_instance_index,
+                            });
+                        }
+                    } else if position.is_some() {
+                        return Err(ExtentRefusal::UnexpectedPosition {
+                            relationship,
+                            extent_index,
+                            instance_index,
+                            side,
+                        });
+                    }
+                }
             }
             let mut links = Vec::new();
             reserve_elements(&mut links, instances.len(), reservation).map_err(extent_storage)?;
-            links.extend(instances);
-            links.sort_unstable();
-            // Construct the complete permutation once; neither links nor inverse changes afterward.
-            let mut inverse = Vec::new();
-            reserve_elements(&mut inverse, links.len(), reservation).map_err(extent_storage)?;
-            inverse.extend(0..links.len());
-            inverse.sort_unstable_by(|&a, &b| {
-                (&links[a].1, &links[a].0, a).cmp(&(&links[b].1, &links[b].0, b))
+            links.extend(instances.into_iter().map(|instance| StoredLink {
+                source: instance.source,
+                target: instance.target,
+                positions: instance.positions,
+            }));
+            links.sort_unstable_by(|a, b| (&a.source, &a.target).cmp(&(&b.source, &b.target)));
+            let mut targets = Vec::new();
+            reserve_elements(&mut targets, links.len(), reservation).map_err(extent_storage)?;
+            targets.extend(0..links.len());
+            targets.sort_unstable_by(|&a, &b| {
+                let left = &links[a];
+                let right = &links[b];
+                if target_end.ordered && target_end.multi_valued {
+                    (&left.source, left.positions.target, a).cmp(&(
+                        &right.source,
+                        right.positions.target,
+                        b,
+                    ))
+                } else {
+                    (&left.source, &left.target, a).cmp(&(&right.source, &right.target, b))
+                }
+            });
+            let mut sources = Vec::new();
+            reserve_elements(&mut sources, links.len(), reservation).map_err(extent_storage)?;
+            sources.extend(0..links.len());
+            sources.sort_unstable_by(|&a, &b| {
+                let left = &links[a];
+                let right = &links[b];
+                if source_end.ordered && source_end.multi_valued {
+                    (&left.target, left.positions.source, a).cmp(&(
+                        &right.target,
+                        right.positions.source,
+                        b,
+                    ))
+                } else {
+                    (&left.target, &left.source, a).cmp(&(&right.target, &right.source, b))
+                }
             });
             admitted
                 .try_insert(
@@ -353,7 +446,8 @@ impl<K: Ord + Clone> RelationshipExtentStore<K> {
                     StoredExtent {
                         complete,
                         links,
-                        inverse,
+                        targets,
+                        sources,
                     },
                     reservation,
                 )
@@ -376,44 +470,46 @@ impl<K: Ord + Clone> RelationshipExtentStore<K> {
         self.state(relationship) == ExtentState::Complete
     }
 
-    /// Targets for the whole source reference, ordered by whole target key.
+    /// Targets for the whole source reference, ordered by position or whole target key.
     pub fn targets<'a>(
         &'a self,
         relationship: &K,
         source: &ObjectReference,
     ) -> impl Iterator<Item = &'a ObjectReference> {
-        let links = self
+        let (links, order) = self
             .extents
             .get(relationship)
-            .map_or(&[][..], |extent| extent.links.as_slice());
-        let start = links.partition_point(|(candidate, _)| candidate < source);
-        let end = links.partition_point(|(candidate, _)| candidate <= source);
-        links
+            .map_or((&[][..], &[][..]), |extent| {
+                (extent.links.as_slice(), extent.targets.as_slice())
+            });
+        let start = order.partition_point(|&index| &links[index].source < source);
+        let end = order.partition_point(|&index| &links[index].source <= source);
+        order
             .get(start..end)
             .into_iter()
             .flatten()
-            .map(|(_, target)| target)
+            .map(|&index| &links[index].target)
     }
 
-    /// Sources for the whole target reference, ordered by whole source key.
+    /// Sources for the whole target reference, ordered by position or whole source key.
     pub fn sources<'a>(
         &'a self,
         relationship: &K,
         target: &ObjectReference,
     ) -> impl Iterator<Item = &'a ObjectReference> {
-        let (links, inverse) = self
+        let (links, order) = self
             .extents
             .get(relationship)
             .map_or((&[][..], &[][..]), |extent| {
-                (extent.links.as_slice(), extent.inverse.as_slice())
+                (extent.links.as_slice(), extent.sources.as_slice())
             });
-        let start = inverse.partition_point(|&index| &links[index].1 < target);
-        let end = inverse.partition_point(|&index| &links[index].1 <= target);
-        inverse
+        let start = order.partition_point(|&index| &links[index].target < target);
+        let end = order.partition_point(|&index| &links[index].target <= target);
+        order
             .get(start..end)
             .into_iter()
             .flatten()
-            .map(|&index| &links[index].0)
+            .map(|&index| &links[index].source)
     }
 }
 
@@ -873,16 +969,31 @@ mod tests {
         )
     }
 
+    fn relationship_instance(
+        source: ObjectReference,
+        target: ObjectReference,
+    ) -> RelationshipInstance {
+        RelationshipInstance {
+            source,
+            target,
+            positions: RelationshipPositions::default(),
+        }
+    }
+
     fn declaration() -> NavigationRelationship<&'static str> {
         NavigationRelationship {
             key: "r",
             source: RelationshipEnd {
                 object_type: ty(1),
                 unique: true,
+                ordered: false,
+                multi_valued: true,
             },
             target: RelationshipEnd {
                 object_type: ty(2),
                 unique: true,
+                ordered: false,
+                multi_valued: true,
             },
         }
     }
@@ -907,7 +1018,7 @@ mod tests {
         let extent = || RelationshipExtent {
             relationship: "r",
             complete: true,
-            instances: vec![(reference(1), reference(2))],
+            instances: vec![relationship_instance(reference(1), reference(2))],
         };
         let prior_store = RelationshipExtentStore::new(&types, &table, [extent()]).unwrap();
         let prior_before = prior_store.clone();
@@ -921,7 +1032,10 @@ mod tests {
         let repeated = RelationshipExtent {
             relationship: "r",
             complete: true,
-            instances: vec![(reference(1), reference(2)), (reference(1), reference(2))],
+            instances: vec![
+                relationship_instance(reference(1), reference(2)),
+                relationship_instance(reference(1), reference(2)),
+            ],
         };
         assert_eq!(
             RelationshipExtentStore::with_reservation(&types, &table, [repeated], &deny),
@@ -964,7 +1078,7 @@ mod tests {
 
     #[trace("TC-919", "FR-119-AC-11", "FR-119-AC-10")]
     #[test]
-    fn inverse_reservation_is_fallible_and_sources_borrow_stored_links() {
+    fn read_indexes_are_fallible_and_sources_borrow_stored_links() {
         let types = types();
         let mut nonunique = declaration();
         nonunique.source.unique = false;
@@ -973,7 +1087,7 @@ mod tests {
         let extent = || RelationshipExtent {
             relationship: "r",
             complete: true,
-            instances: vec![(reference(1), reference(2))],
+            instances: vec![relationship_instance(reference(1), reference(2))],
         };
         let reservations = Cell::new(0);
         let deny_inverse = |request: StorageRequest| {
@@ -995,7 +1109,7 @@ mod tests {
 
         let store = RelationshipExtentStore::new(&types, &table, [extent()]).unwrap();
         let source = store.sources(&"r", &reference(2)).next().unwrap();
-        let stored = &store.extents.get(&"r").unwrap().links[0].0;
+        let stored = &store.extents.get(&"r").unwrap().links[0].source;
         assert!(core::ptr::eq(source, stored));
     }
 

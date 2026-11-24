@@ -15,7 +15,8 @@ use filament_semantic_value::relationship_extent::{
     ClosedPopulationManifest, EndSide, ExtentRefusal, ExtentState, ManifestFailure,
     ManifestOutcome, ManifestState, NavigationRelationship, NavigationRelationshipTable,
     PopulationEntry, PopulationEntryFailure, PopulationEnumerator, RelationshipEnd,
-    RelationshipExtent, RelationshipExtentStore, Resolution, StopReason, TableRefusal,
+    RelationshipExtent, RelationshipExtentStore, RelationshipInstance, RelationshipPositions,
+    Resolution, StopReason, TableRefusal,
 };
 use ix_trace_rs::trace;
 
@@ -68,6 +69,8 @@ fn end(object_type: u8, unique: bool) -> RelationshipEnd {
     RelationshipEnd {
         object_type: ty(object_type),
         unique,
+        ordered: false,
+        multi_valued: true,
     }
 }
 
@@ -99,6 +102,25 @@ fn extent(
     relationship: &'static str,
     complete: bool,
     instances: Vec<(ObjectReference, ObjectReference)>,
+) -> RelationshipExtent<&'static str> {
+    positioned_extent(
+        relationship,
+        complete,
+        instances
+            .into_iter()
+            .map(|(source, target)| RelationshipInstance {
+                source,
+                target,
+                positions: RelationshipPositions::default(),
+            })
+            .collect(),
+    )
+}
+
+fn positioned_extent(
+    relationship: &'static str,
+    complete: bool,
+    instances: Vec<RelationshipInstance>,
 ) -> RelationshipExtent<&'static str> {
     RelationshipExtent {
         relationship,
@@ -573,6 +595,320 @@ fn reads_sort_full_reference_keys_and_retain_adjacent_repeats() {
     assert_eq!(
         a.targets(&"composition", &reference(9, PUMP, "s1")).count(),
         0
+    );
+}
+
+#[trace("TC-919", "FR-119-AC-21")]
+#[test]
+fn positions_are_checked_after_type_and_duplicate_instance_conditions() {
+    let types = types();
+    let mut relationship = declaration("composition", SYS, PUMP, true);
+    relationship.target.ordered = true;
+    let table = NavigationRelationshipTable::new(&types, [relationship]).unwrap();
+    let source = reference(9, SYS, "s1");
+    let target = reference(9, PUMP, "p1");
+
+    let no_position = positioned_extent(
+        "composition",
+        true,
+        vec![RelationshipInstance {
+            source: source.clone(),
+            target: target.clone(),
+            positions: RelationshipPositions::default(),
+        }],
+    );
+    assert_eq!(
+        RelationshipExtentStore::new(&types, &table, [no_position]),
+        Err(ExtentRefusal::MissingPosition {
+            relationship: "composition",
+            extent_index: 0,
+            instance_index: 0,
+            side: EndSide::Target,
+        })
+    );
+
+    let mismatch = positioned_extent(
+        "composition",
+        true,
+        vec![RelationshipInstance {
+            source: reference(9, TANK, "t1"),
+            target: target.clone(),
+            positions: RelationshipPositions::default(),
+        }],
+    );
+    assert!(matches!(
+        RelationshipExtentStore::new(&types, &table, [mismatch]),
+        Err(ExtentRefusal::EndTypeMismatch {
+            side: EndSide::Source,
+            instance_index: 0,
+            ..
+        })
+    ));
+
+    let repeated = positioned_extent(
+        "composition",
+        true,
+        vec![
+            RelationshipInstance {
+                source: source.clone(),
+                target: target.clone(),
+                positions: RelationshipPositions {
+                    source: None,
+                    target: Some(4),
+                },
+            },
+            RelationshipInstance {
+                source: source.clone(),
+                target: target.clone(),
+                positions: RelationshipPositions {
+                    source: None,
+                    target: Some(4),
+                },
+            },
+        ],
+    );
+    assert_eq!(
+        RelationshipExtentStore::new(&types, &table, [repeated]),
+        Err(ExtentRefusal::DuplicateTriple {
+            relationship: "composition",
+            extent_index: 0,
+            instance_index: 1,
+        })
+    );
+
+    let mut single_valued = declaration("composition", SYS, PUMP, true);
+    single_valued.source.ordered = true;
+    single_valued.source.multi_valued = false;
+    let single_table = NavigationRelationshipTable::new(&types, [single_valued]).unwrap();
+    let unexpected_single = positioned_extent(
+        "composition",
+        true,
+        vec![RelationshipInstance {
+            source: source.clone(),
+            target: target.clone(),
+            positions: RelationshipPositions {
+                source: Some(0),
+                target: None,
+            },
+        }],
+    );
+    assert_eq!(
+        RelationshipExtentStore::new(&types, &single_table, [unexpected_single]),
+        Err(ExtentRefusal::UnexpectedPosition {
+            relationship: "composition",
+            extent_index: 0,
+            instance_index: 0,
+            side: EndSide::Source,
+        })
+    );
+
+    let unexpected_unordered = positioned_extent(
+        "composition",
+        true,
+        vec![RelationshipInstance {
+            source,
+            target,
+            positions: RelationshipPositions {
+                source: Some(0),
+                target: Some(1),
+            },
+        }],
+    );
+    assert_eq!(
+        RelationshipExtentStore::new(&types, &table, [unexpected_unordered]),
+        Err(ExtentRefusal::UnexpectedPosition {
+            relationship: "composition",
+            extent_index: 0,
+            instance_index: 0,
+            side: EndSide::Source,
+        })
+    );
+
+    let duplicate_target_position = positioned_extent(
+        "composition",
+        true,
+        vec![
+            RelationshipInstance {
+                source: reference(9, SYS, "s1"),
+                target: reference(9, PUMP, "p1"),
+                positions: RelationshipPositions {
+                    source: None,
+                    target: Some(2),
+                },
+            },
+            RelationshipInstance {
+                source: reference(9, SYS, "s1"),
+                target: reference(9, PUMP, "p2"),
+                positions: RelationshipPositions {
+                    source: None,
+                    target: Some(2),
+                },
+            },
+        ],
+    );
+    assert_eq!(
+        RelationshipExtentStore::new(&types, &table, [duplicate_target_position]),
+        Err(ExtentRefusal::DuplicatePosition {
+            relationship: "composition",
+            extent_index: 0,
+            instance_index: 1,
+            side: EndSide::Target,
+            earlier_instance_index: 0,
+        })
+    );
+
+    let duplicate_source_position = positioned_extent(
+        "housing",
+        true,
+        vec![
+            RelationshipInstance {
+                source: reference(9, PUMP, "p1"),
+                target: reference(9, TANK, "t1"),
+                positions: RelationshipPositions {
+                    source: Some(2),
+                    target: None,
+                },
+            },
+            RelationshipInstance {
+                source: reference(9, PUMP, "p2"),
+                target: reference(9, TANK, "t1"),
+                positions: RelationshipPositions {
+                    source: Some(2),
+                    target: None,
+                },
+            },
+        ],
+    );
+    let mut housing = declaration("housing", PUMP, TANK, true);
+    housing.source.ordered = true;
+    let housing_table = NavigationRelationshipTable::new(&types, [housing]).unwrap();
+    assert_eq!(
+        RelationshipExtentStore::new(&types, &housing_table, [duplicate_source_position]),
+        Err(ExtentRefusal::DuplicatePosition {
+            relationship: "housing",
+            extent_index: 0,
+            instance_index: 1,
+            side: EndSide::Source,
+            earlier_instance_index: 0,
+        })
+    );
+}
+
+#[trace("TC-919", "FR-119-AC-22", "FR-119-AC-23")]
+#[test]
+fn ordered_target_and_source_reads_use_positions_scoped_to_the_opposite_end() {
+    let types = types();
+    let mut composition = declaration("composition", SYS, PUMP, true);
+    composition.target.ordered = true;
+    let target_table = NavigationRelationshipTable::new(&types, [composition]).unwrap();
+    let s1 = reference(9, SYS, "s1");
+    let s2 = reference(9, SYS, "s2");
+    let p1 = reference(9, PUMP, "p1");
+    let p2 = reference(9, PUMP, "p2");
+    let ordered_targets = vec![
+        RelationshipInstance {
+            source: s1.clone(),
+            target: p2.clone(),
+            positions: RelationshipPositions {
+                source: None,
+                target: Some(8),
+            },
+        },
+        RelationshipInstance {
+            source: s1.clone(),
+            target: p1.clone(),
+            positions: RelationshipPositions {
+                source: None,
+                target: Some(2),
+            },
+        },
+        RelationshipInstance {
+            source: s2.clone(),
+            target: p2.clone(),
+            positions: RelationshipPositions {
+                source: None,
+                target: Some(2),
+            },
+        },
+    ];
+    let target_store = RelationshipExtentStore::new(
+        &types,
+        &target_table,
+        [positioned_extent(
+            "composition",
+            true,
+            ordered_targets.clone(),
+        )],
+    )
+    .unwrap();
+    let mut reversed_targets = ordered_targets;
+    reversed_targets.reverse();
+    let reordered_store = RelationshipExtentStore::new(
+        &types,
+        &target_table,
+        [positioned_extent("composition", true, reversed_targets)],
+    )
+    .unwrap();
+    let target_result = vec![p1.clone(), p2.clone()];
+    assert_eq!(
+        target_store
+            .targets(&"composition", &s1)
+            .cloned()
+            .collect::<Vec<_>>(),
+        target_result
+    );
+    assert_eq!(
+        reordered_store
+            .targets(&"composition", &s1)
+            .cloned()
+            .collect::<Vec<_>>(),
+        target_result
+    );
+    assert_eq!(target_store.targets(&"composition", &s2).next(), Some(&p2));
+
+    let mut housing = declaration("housing", PUMP, TANK, true);
+    housing.source.ordered = true;
+    let source_table = NavigationRelationshipTable::new(&types, [housing]).unwrap();
+    let t1 = reference(9, TANK, "t1");
+    let t2 = reference(9, TANK, "t2");
+    let ordered_sources = vec![
+        RelationshipInstance {
+            source: p2.clone(),
+            target: t1.clone(),
+            positions: RelationshipPositions {
+                source: Some(8),
+                target: None,
+            },
+        },
+        RelationshipInstance {
+            source: p1.clone(),
+            target: t1.clone(),
+            positions: RelationshipPositions {
+                source: Some(2),
+                target: None,
+            },
+        },
+        RelationshipInstance {
+            source: p2.clone(),
+            target: t2,
+            positions: RelationshipPositions {
+                source: Some(2),
+                target: None,
+            },
+        },
+    ];
+    let source_store = RelationshipExtentStore::new(
+        &types,
+        &source_table,
+        [positioned_extent("housing", true, ordered_sources)],
+    )
+    .unwrap();
+    assert_eq!(
+        source_store
+            .sources(&"housing", &t1)
+            .cloned()
+            .collect::<Vec<_>>(),
+        vec![p1, p2]
     );
 }
 
