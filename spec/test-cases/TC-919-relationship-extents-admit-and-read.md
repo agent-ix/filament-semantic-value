@@ -7,7 +7,7 @@ relationships:
   - target: ix://agent-ix/filament-semantic-value/FR-119
     type: verifies
 ---
-# TC-919: Relationship extents admit in condition order and read by full reference key
+# TC-919: Relationship extents admit in condition order and read by end order
 
 ## Description
 
@@ -16,7 +16,7 @@ through FSV's public table, extent and `ObjectClosure` APIs, using full
 references supplied by a model-layer caller. The reservation-denial and
 capacity cases of AC-11 and AC-15 use in-crate unit tests beside the code and
 the existing crate-private reservation seam, as in FR-108/TC-907. Scope:
-FR-119-AC-1 through FR-119-AC-20. This is a planned FSV counterpart of
+FR-119-AC-1 through FR-119-AC-24. This is a planned FSV counterpart of
 [FSL TC-1033](ix://agent-ix/filament-spec-language/TC-1033).
 
 ## Test Procedure
@@ -24,17 +24,33 @@ FR-119-AC-1 through FR-119-AC-20. This is a planned FSV counterpart of
 1. Construct the TC-1033 `orders` fixture with `Sys`, `Pump`, `Tank`, objects
    `s1`, `s2`, `p1`, `p2`, `p3`, `t1`, and caller-defined ordered keys for
    `Sys-composition-Pump`, `Pump-housing-Tank` and non-navigation `pipe`.
-   Use the fixture's **bag**, **bag-target** and **min** variants. Admit the
+   Declare each relationship end with its type, `unique`, `ordered` and
+   `multi_valued` flags; derive `multi_valued` as true when the declared upper
+   bound is greater than one or unbounded, without passing the bound to FSV.
+   Use the fixture's **bag**,
+   **bag-target** and **min** variants. Admit the
    table supplied by the model owner from authenticated declarations; try a
    repeated key and unknown type on each end. Assert the exact typed causes
    and payloads of FR-119-AC-1, including explicit end-type membership checks.
    Give a duplicate key an unknown end type and require `DuplicateRelationshipKey`;
    give one declaration unknown source and target types and require the source cause.
-2. Supply composition `s1`-`p2`, `s1`-`p1` and housing `p2`-`t1`, `p1`-`t1`
-   as complete extents. Reverse the extent and instance input orders in a
-   second store. Compare every forward and inverse read and complete state.
-   Add full references named `p1` in another universe and another type;
+2. For unordered ends, supply composition `s1`-`p2`, `s1`-`p1` and housing
+   `p2`-`t1`, `p1`-`t1` as complete extents. Reverse the extent and instance
+   input orders in a second store. Compare `targets` and `sources` in canonical
+   whole-reference-key order and compare complete state. This is the
+   full-reference-key ordering case, independent of instance order. Add full
+   references named `p1` in another universe and another type;
    query each as receiver and check that neither aliases `Pump p1`.
+   In a separate store, mark `composition`'s target end ordered and
+   multi-valued; put positions 8 on `p2` and 2 on `p1`, then require
+   `targets(composition, s1)` to return `[p1, p2]` in numeric position order
+   despite the reverse key and input order. Add another source group `s2`
+   whose target uses position 2; it admits and does not share a duplicate
+   scope with `s1`. In another store, mark `housing`'s source end ordered and
+   multi-valued, supply source positions 8 for `p2` and 2 for `p1` at `t1`,
+   and require `sources(housing, t1)` to return `[p1, p2]`; give a different
+   target group the same source position 2 and require admission. These are
+   separate target-position and source-position read assertions.
 3. Map the fixture's non-navigation `pipe` to a key absent from FSV's table;
    submit it and then an unknown key in separate calls, followed by a duplicate
    composition extent, `t1`-`p1`, `s1`-`t1`, and repeated `s1`-`p1`.
@@ -57,9 +73,27 @@ FR-119-AC-1 through FR-119-AC-20. This is a planned FSV counterpart of
    with an actual type unknown to the declared environment; inspect the explicit
    membership check separately from the behavioral assertion.
    Supply a missing end object whose reference type conforms and assert that
-   the instance admits and the end remains available to `resolve`.
-4. Inspect the public table input and admission path: each end carries only
-   type and `unique`, no lower/upper bound or count comparison. Add many targets
+   the instance admits and the end remains available to `resolve`. On an
+   ordered multi-valued end, separately omit a required position, supply a
+   position for an unordered end, supply one for a single-valued ordered end,
+   and duplicate a target position among instances sharing one source
+   reference. Separately duplicate a source position among instances sharing
+   one target reference. Require `MissingPosition`, `UnexpectedPosition` or
+   `DuplicatePosition` with the relationship, end and instance indices;
+   duplicate position identifies its earlier instance. Repeat target-position
+   equality across different sources and source-position equality across
+   different targets, and require admission in both cases. Confirm position
+   condition 5 follows end-type and repeated-triple conditions for each
+   instance.
+   Inspect that typed model-layer `RelationshipPositions` accepts only
+   `Option<u64>` for `source` and `target`: a malformed decimal spelling or
+   unknown position member is not representable at this boundary. Their wire
+   refusals are exercised by FSL TC-1902 before conversion to these typed
+   values; do not introduce a string or open-ended map API in FSV.
+4. Inspect the public table input and admission path: each end carries type,
+   `unique`, `ordered` and `multi_valued`, no lower/upper bound or count
+   comparison. Derive `multi_valued` as true for an upper bound greater than
+   one or for an unbounded end, outside FSV. Add many targets
    for one source and admit 0, 1 and that large count in separate fixtures,
    including an empty complete extent. FSL fixture bounds are not passed to FSV. Separately
    admit a listed incomplete extent holding one link and omit housing
@@ -177,7 +211,17 @@ position payload, before later defects; refused input publishes nothing.
 The FSV input has no multiplicity bounds; 0, 1 and many instances admit. A missing end is checked
 against its reference type even when no object is held; a conforming missing
 end admits. Reads are pure, total and
-sorted by the whole reference key with repeats preserved. The three extent
+sorted by the whole reference key for unordered ends with repeats preserved.
+Ordered multi-valued target reads use ascending numeric target positions and
+ordered multi-valued source reads use ascending numeric source positions; each
+read is independent of input order. Equal positions in different opposite-end
+groups admit, while a duplicate in one group refuses with the relationship,
+end and instance indices, including the earlier instance index. Missing
+required positions and positions on unordered or single-valued ends produce
+distinct typed `MissingPosition` and `UnexpectedPosition` refusals. Typed
+`RelationshipPositions` has only optional `u64` fields, so malformed strings
+and unknown position names cannot enter FSV; FSL's wire reader checks these
+cases before conversion as exercised by FR-106/TC-1902. The three extent
 states and three resolve results remain distinct. Missing references with no
 covering population remain `Undecidable`; a child-only declaration does not
 cover a parent; an incomplete covering supertype
@@ -197,3 +241,5 @@ rows; denied storage never publishes partially admitted state.
 IMPLEMENTED/TESTS PASSED: FR-119-AC-1 through FR-119-AC-9 and FR-119-AC-11 through FR-119-AC-20.
 
 IMPLEMENTED/TESTS PASSED: FR-119-AC-10. Repeated `complete`, `targets`, `sources`, and `resolve` reads were measured with `allocation-counter`; every measured read allocated zero times. An allocating control confirmed the counter was active. Charge, purity and Float-identity assertions also passed.
+
+PLANNED/UNRUN: FR-119-AC-21 through FR-119-AC-24 add model-layer position admission, ordered target/source reads, and the typed boundary that excludes malformed or unknown wire positions. No implementation or tests for these criteria are claimed.
