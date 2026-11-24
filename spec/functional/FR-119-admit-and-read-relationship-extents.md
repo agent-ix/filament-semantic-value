@@ -1,6 +1,6 @@
 ---
 id: FR-119
-title: "Admit relationship extents and read their reference keys"
+title: "Admit relationship extents and read their references in end order"
 type: FR
 org: agent-ix
 relationships:
@@ -17,7 +17,7 @@ relationships:
   - target: ix://agent-ix/filament-spec-language/FR-084
     type: references
 ---
-# FR-119: Admit relationship extents and read their reference keys
+# FR-119: Admit relationship extents and read their references in end order
 
 ## Description
 
@@ -33,13 +33,38 @@ population bindings, charge accounting and snapshot integration remain with
 - An admitted `TypeEnvironment` and `ObjectClosure`.
 - Navigation-relationship declarations keyed by caller type `K: Ord + Clone`:
   each has a key and source and target ends, each end naming an effective
-  object type and its `unique` flag, with no multiplicity bounds. The model owner
+  object type and its `unique`, `ordered` and `multi_valued` flags, with no
+  multiplicity bounds. `ordered` comes from the declared end and
+  `multi_valued` states whether its upper bound is greater than one or is
+  unbounded; FSV does not receive or evaluate the bound. The model owner
   (FSL) supplies the table
   and end types from authenticated declarations; FSV checks end-type membership
   in the `TypeEnvironment` but does not authenticate declarations.
 - One call supplies a sequence of extents in order, each naming one relationship,
-  a `complete` flag,
-  and ordered input instances of full source and target references.
+  a `complete` flag and ordered input instances. Each instance has full source
+  and target references and optional unsigned 64-bit positions for those ends.
+  The model-layer shape is:
+
+  ```rust
+  pub struct RelationshipInstance {
+      pub source: ObjectReference,
+      pub target: ObjectReference,
+      pub positions: RelationshipPositions,
+  }
+  pub struct RelationshipPositions {
+      pub source: Option<u64>,
+      pub target: Option<u64>,
+  }
+  pub struct RelationshipExtent<K> {
+      pub relationship: K,
+      pub complete: bool,
+      pub instances: Vec<RelationshipInstance>,
+  }
+  ```
+
+  These are typed model-layer values: malformed decimal encodings and unknown
+  position member names cannot be represented here. FSL rejects those wire
+  inputs before constructing the semantic-value extent.
 - A population enumerator supplied by FSL, yielding entries naming a
   caller-defined population `P`, its non-empty, caller-ordered set of covered
   effective object types, and its
@@ -82,7 +107,16 @@ population bindings, charge accounting and snapshot integration remain with
 
 - An admitted relationship table and extent store, or a typed table, extent,
   allocation or capacity refusal.
+- `RelationshipEnd` SHALL expose `object_type`, `unique`, `ordered` and
+  `multi_valued`; `RelationshipInstance` SHALL expose its full `source` and
+  `target` references and `positions: RelationshipPositions`, whose
+  `source` and `target` members are each `Option<u64>`. `ExtentRefusal` SHALL
+  include `MissingPosition`, `UnexpectedPosition` and `DuplicatePosition`
+  variants carrying the relationship, extent index, instance index and end;
+  `DuplicatePosition` also carries the earlier instance index.
 - Pure `complete`, `targets`, `sources` and three-way `resolve` reads.
+  `targets` and `sources` use position order when the navigated end is ordered
+  and multi-valued, and canonical full-reference-key order otherwise.
 
 ## Behavior
 
@@ -108,22 +142,36 @@ population bindings, charge accounting and snapshot integration remain with
    condition 3 (source then target reference-type conformance against the
    authenticated declared end type, whether or not the referenced object is
    held in the closure), then condition 4 (duplicate
-   full triple unless both ends declare `unique: false`). It SHALL stop at the
-   first failure. The four conditions SHALL have distinct typed refusal causes.
+   full triple unless both ends declare `unique: false`), then position
+   condition 5. Position condition 5 SHALL apply after the instance's type and
+   repeated-instance checks and before the next instance, using the end flags
+   in the admitted table and the instance's typed positions. It SHALL stop at
+   the first failure. These conditions SHALL have distinct typed refusal causes.
    Each SHALL carry the
    relationship and zero-based position in that call as extent index; instance
    conditions also carry
    the zero-based instance index. End type mismatch SHALL additionally carry
-   side, actual reference object type and declared end type. For each end, FSV SHALL
+   side, actual reference object type and declared end type. FSV SHALL include
+   the relationship, end, extent index and instance index in each position
+   refusal; a `DuplicatePosition` refusal SHALL also include the earlier
+   instance index. For each end, FSV SHALL
    explicitly check that the reference's object type is a member of the
    `TypeEnvironment` before checking conformance; an unknown actual type SHALL
    return that same typed `EndTypeMismatch` carrying the unknown type, since
    reflexive `conforms` on an equal unknown key does not prove membership. A
    store SHALL admit no extents from a refused call.
-   FSV SHALL leave any earlier independent store unchanged.
-   The table input contains no lower or upper multiplicity bounds. FSV SHALL
-   perform no instance-count comparison at admission. FSL passes only each end's type
-   and `unique` flag through this boundary.
+   FSV SHALL leave any earlier independent store unchanged. An ordered
+   multi-valued end SHALL require a position on every instance. An unordered
+   end or a single-valued end SHALL reject a supplied position. Positions SHALL
+   be unique within the instances that share the opposite-end full reference:
+   target positions are grouped by source reference, and source positions by
+   target reference. Equal positions in different groups SHALL admit; positions
+   need not be consecutive. Malformed encodings and unknown position member
+   names are outside this typed model-layer API. The FSL document reader SHALL
+   reject them before conversion. The table input contains no lower or
+   upper multiplicity bounds. FSV SHALL perform no instance-count comparison
+   at admission. FSL passes each end's type, `unique`, `ordered` and
+   `multi_valued` flags through this boundary.
 3. The store SHALL distinguish unlisted, listed incomplete and listed complete
    extents. A listed complete extent may hold zero instances. The `complete(R)`
    read SHALL be true exactly for the listed complete state. `targets(R, r)` and
@@ -131,10 +179,14 @@ population bindings, charge accounting and snapshot integration remain with
    incomplete extent, and an empty result for unlisted extents.
 4. `targets` SHALL select instances whose full source reference equals `r`;
    `sources` SHALL select instances whose full target reference equals `r`.
-   Both SHALL return the opposite full references in ascending whole-reference
-   key order (universe, object type, object identity), independent of input
-   order, with repeated references adjacent and retained once per instance.
-   Equality SHALL use the whole key, including universe and type.
+   If the end being read is ordered and multi-valued, the read SHALL return the
+   opposite full references in ascending numeric position, independent of
+   instance input order. Otherwise it SHALL return them in ascending
+   whole-reference key order (universe, object type, object identity),
+   independent of input order. Equal positions in different opposite-end
+   groups do not affect a read for one receiver. Repeated references in an
+   unordered result SHALL be adjacent and retained once per instance. Equality
+   SHALL use the whole key, including universe and type.
 5. `ObjectClosure::resolve(x, types, manifest)` SHALL first return `Present`
    whenever `x` is an admitted object, regardless of the manifest's state or
    whether its environment reference is identical to `types`. This preserves
@@ -240,9 +292,9 @@ population bindings, charge accounting and snapshot integration remain with
 | FR-119-AC-3 | A second extent of the same relationship at extent index 1 in one constructor call returns typed `DuplicateExtent` naming the key and index, even if its instances are otherwise invalid; neither extent from that call appears. A later constructor call over the same relationship succeeds independently and leaves the earlier store unchanged; no incremental add operation exists. | Test + Inspection |
 | FR-119-AC-4 | At instance index 0, a `Tank` source reference against declared `Sys`, and separately a `Tank` target reference against declared `Pump`, return typed `EndTypeMismatch` with relationship, extent index, instance index, side, actual type and declared type even when the end object is missing from the closure. An actual reference type unknown to the declared environment also returns that mismatch carrying the unknown type. If both ends mismatch, source wins. A missing end object with a conforming reference type admits and remains available to `resolve`; no refused instance appears. | Test |
 | FR-119-AC-5 | Repeating the same relationship/source/target triple at instance index 1 returns typed `DuplicateTriple` with relationship, extent index and instance index when both ends are unique or only one end is non-unique. When both ends are non-unique, both occurrences admit and both reads retain adjacent repeats. A duplicate at instance 1 wins over a type mismatch at instance 2, and a type mismatch in extent 0 wins over a duplicate extent at index 1. | Test |
-| FR-119-AC-6 | The public table input contains only type and `unique` for each end, no lower or upper bound, and the admission path performs no count comparison. For one source, 0, 1 and a large number of instances each admit; a complete empty extent admits. | Inspection + Test |
+| FR-119-AC-6 | The public table input contains end type, `unique`, `ordered` and `multi_valued` flags, no lower or upper bound, and the admission path performs no count comparison. For one source, 0, 1 and a large number of instances each admit; a complete empty extent admits. | Inspection + Test |
 | FR-119-AC-7 | An unlisted relationship gives `complete=false` and empty reads; a listed incomplete extent gives `complete=false` while retaining its instances in reads; a listed complete empty extent gives `complete=true` and empty reads. Listing an incomplete extent with instances does not make it complete; an unlisted relationship stays incomplete when a sibling is listed complete. | Test |
-| FR-119-AC-8 | Supplying two relationships and their instances in either order yields identical `targets` and `sources` in ascending universe/type/identity order. A repeated non-unique link appears twice adjacently; inverse `sources` reads the same instances. A same-named object in another universe, and separately another type, does not match a receiver or collapse with it. | Test |
+| FR-119-AC-8 | With the read end unordered, supplying two relationships and their instances in either order yields identical `targets` and `sources` in ascending universe/type/identity order. A repeated non-unique link appears twice adjacently; inverse `sources` reads the same instances. A same-named object in another universe, and separately another type, does not match a receiver or collapse with it. This criterion owns the canonical full-reference-key order for unordered ends. | Test |
 | FR-119-AC-9 | `resolve` returns `Present` for an admitted object with a `Partial` outcome and with a `Closed` outcome whose covering population entry is incomplete, including when the manifest was built against a different environment value from the supplied `types`. | Test |
 | FR-119-AC-10 | Test: repeating every read gives equal results, zero allocations and charges, and closure and store equal to their pre-read clones, including after incomplete and unlisted reads. A closure with a Float attribute, including NaN, equals itself and its clone; two otherwise identical closures whose Float attribute differs only between positive and negative zero compare unequal. Inspection: read signatures and bodies access no object field, population member list, path, clock or global and allocate no storage; closure equality uses exact structural identity, not model `=`. | Test + Inspection |
 | FR-119-AC-11 | Denying an actual representable table reservation and separately an extent reservation returns typed `Allocation` with the exact requested amount and byte or additional-element unit; capacity arithmetic overflow returns distinct typed `Capacity`. Each failure publishes no partial input, leaves prior admitted state equal to its clone, and the same input admits after denial is removed. No FSV count ceiling rejects it. | Test |
@@ -255,6 +307,10 @@ population bindings, charge accounting and snapshot integration remain with
 | FR-119-AC-18 | After N successful `Some` pulls followed by `Err`, `from_enumerator` returns `Partial` with N rows retained in sorted order, both `source_rows` accessors equal N, and `EnumeratorError` carrying the original error. The failing pull is not counted; a missing object covered by a retained complete row still resolves `Undecidable`. | Test |
 | FR-119-AC-19 | With a missing known-type `x`, passing `types` as a different environment value from the one borrowed by a closed manifest returns `Undecidable` even when its complete rows would cover `x`. The same mismatch does not prevent `Present` for a held `x`, even with a `Partial` outcome. Inspection confirms the manifest types borrow their environment, `resolve` shares `'t` between `types` and the outcome and compares references by `core::ptr::eq` only for missing `x`, while `ObjectClosure` has no environment field or lifetime and retains its `new` signature. FSV does not authenticate the closure and manifest's checked-unit/source pairing. | Test + Inspection |
 | FR-119-AC-20 | With only a child type declared in a complete population entry, a missing parent-typed reference remains `Undecidable` in a `Closed` manifest with matching environments: the parent does not conform to the child. A missing child-typed reference is `Dangling` under that same entry, demonstrating reflexive coverage. | Test |
+| FR-119-AC-21 | An ordered multi-valued target end admits a position on every instance and an ordered multi-valued source end admits a source position on every instance. A missing required position returns typed `MissingPosition`; a supplied position on an unordered end or on a single-valued end returns typed `UnexpectedPosition`. A repeated target position among instances sharing one source reference, and separately a repeated source position among instances sharing one target reference, each returns typed `DuplicatePosition` naming the earlier and later instance indices. Position condition 5 runs after the instance's end-type and repeated-triple checks; a type mismatch or repeated triple in an instance therefore keeps its earlier condition's cause. Equal positions in different groups admit. | Test |
+| FR-119-AC-22 | For an ordered multi-valued target end, `targets(R, source)` returns target references in ascending numeric target-position order, independent of instance input order. Two different source references may use the same target position and both admit. Reordering the instance list leaves the read equal; the canonical full-reference-key ordering rule of FR-119-AC-8 does not replace this position order. | Test |
+| FR-119-AC-23 | For an ordered multi-valued source end, `sources(R, target)` returns source references in ascending numeric source-position order, independent of instance input order. Two different target references may use the same source position and both admit. Reordering the instance list leaves the read equal; the canonical full-reference-key ordering rule of FR-119-AC-8 does not replace this position order. | Test |
+| FR-119-AC-24 | The `RelationshipPositions` model-layer input accepts only optional `u64` source and target values, so a malformed decimal spelling or an unknown position member cannot be represented or admitted through `RelationshipExtentStore`. Before creating the typed model-layer input, FSL's snapshot reader refuses a non-object positions member or non-string end value as `invalid_runtime_input`/`wrong-value-kind`, a noncanonical or out-of-range decimal string as `invalid_runtime_input`/`invalid-value`, and an unknown end key as `invalid_runtime_input`/`unknown-member`. | Inspection |
 
 ## Dependencies
 
@@ -297,3 +353,5 @@ population bindings, charge accounting and snapshot integration remain with
 IMPLEMENTED/TESTS PASSED: FR-119-AC-1 through FR-119-AC-9 and FR-119-AC-11 through FR-119-AC-20.
 
 IMPLEMENTED/TESTS PASSED: FR-119-AC-10. Repeated `complete`, `targets`, `sources`, and `resolve` reads were measured with `allocation-counter`; every measured read allocated zero times. An allocating control confirmed the counter was active. Charge, purity and Float-identity assertions also passed.
+
+PLANNED, NOT IMPLEMENTED: FR-119-AC-21 through FR-119-AC-24 specify ordered-position admission and reads for QSL-2958 / IR-1595. No implementation or tests for these criteria are claimed.
