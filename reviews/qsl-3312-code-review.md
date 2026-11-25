@@ -26,6 +26,7 @@ Reviewed the exact `filament-exact` dependency pin and lockfile update for QSL-3
 | FND | outcome | reason |
 | --- | --- | --- |
 | FND-001 | fixed | FR-135-AC-3 and its traced equality test now require equal place-id text to compare `true` across universes, matching FR-415/FR-829. After excerpt: `check_equality` of two `ClockReference` operands succeeds and its evaluation returns `false` for two place-id texts that differ in `K` in one universe and for unequal texts across universes, and `true` for equal place-id text in one or two universes; `check_equality` of `ClockReference` against `Reference(t)` is refused `TypeMismatch`. |
+| FND-002 | fixed | The Option and Map closure cases now read back the nested clock reference and assert both its text and universe payload. After excerpt: `actual.text() == place_text("c/d") && actual.universe() == &one` (asserted for `option.payload()` and `map_value.entries()`). |
 
 ## New findings (disposition pass 1)
 
@@ -36,3 +37,7 @@ Reviewed the exact `filament-exact` dependency pin and lockfile update for QSL-3
 ## Verdict after disposition pass 1
 
 **CONDITIONAL** — FND-001 is fixed; the new medium FND-002 remains open for the nested closure readback payload.
+
+## Verdict after disposition pass 2
+
+**PASS** — FND-001 and FND-002 are fixed; no new code-review finding remains.
