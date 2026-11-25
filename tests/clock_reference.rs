@@ -9,7 +9,7 @@ mod common;
 use filament_exact::{
     from_admitted, from_admitted_map, Cancel, ClockPlaceReference, CollectionKind, CollectionType,
     FieldValue, IllTypedCause, Integer, MapType, Meter, ObjectId, ObjectReference, OptionValue,
-    Outcome, Presence, Refusal, ScalarLimits, UnionMember, UniverseId, Value, ValueType,
+    Outcome, Presence, ScalarLimits, UnionMember, UniverseId, Value, ValueType,
 };
 use filament_semantic_value::declaration::{
     CompositeDeclaration, CompositeShape, DeclarationCause, EnvironmentFailure, EqualityOperand,
