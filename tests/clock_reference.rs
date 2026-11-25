@@ -368,6 +368,18 @@ fn clock_references_add_no_object_closure_edge() {
     let optional = holder_types(ValueType::option(clock_type()));
     let present = |value: &Value| OptionValue::from_admitted(clock_type(), Some(value.clone()));
     let admitted = holder_closure(&optional, present(&reference));
+    let held = admitted
+        .object(&object_reference("holder"))
+        .and_then(|attributes| attributes.get("r"));
+    assert!(matches!(
+        held,
+        Some(FieldValue::Present(Value::Option(option)))
+            if matches!(
+                option.payload(),
+                Some(Value::ClockReference(actual))
+                    if actual.text() == place_text("c/d") && actual.universe() == &one
+            )
+    ));
     assert_eq!(admitted.iter().count(), 1);
     assert_eq!(admitted, holder_closure(&optional, present(&reference)));
     assert_ne!(admitted, holder_closure(&optional, present(&other_place)));
@@ -385,6 +397,18 @@ fn clock_references_add_no_object_closure_edge() {
         .expect("map entries admit")
     };
     let admitted = holder_closure(&mapped, map(&reference));
+    let held = admitted
+        .object(&object_reference("holder"))
+        .and_then(|attributes| attributes.get("r"));
+    assert!(matches!(
+        held,
+        Some(FieldValue::Present(Value::Map(map_value)))
+            if matches!(
+                map_value.entries(),
+                [(_, Value::ClockReference(actual))]
+                    if actual.text() == place_text("c/d") && actual.universe() == &one
+            )
+    ));
     assert_eq!(admitted.iter().count(), 1);
     assert_eq!(admitted, holder_closure(&mapped, map(&reference)));
     assert_ne!(admitted, holder_closure(&mapped, map(&other_place)));
