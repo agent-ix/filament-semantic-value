@@ -9,7 +9,7 @@ mod common;
 use filament_exact::{
     from_admitted, from_admitted_map, Cancel, ClockPlaceReference, CollectionKind, CollectionType,
     FieldValue, IllTypedCause, Integer, MapType, Meter, ObjectId, ObjectReference, OptionValue,
-    Outcome, Presence, Refusal, ScalarLimits, UnionMember, UniverseId, Value, ValueType,
+    Outcome, Presence, ScalarLimits, UnionMember, UniverseId, Value, ValueType,
 };
 use filament_semantic_value::declaration::{
     CompositeDeclaration, CompositeShape, DeclarationCause, EnvironmentFailure, EqualityOperand,
@@ -278,8 +278,8 @@ fn equality(
 }
 
 /// The semantic equality path leaves the decision to the kernel: unequal
-/// texts are `false`, one place is `true`, one text in two universes is a
-/// foreign reference, and an object reference is a different type.
+/// place-id texts are `false`, equal place-id text is `true` across universes,
+/// and an object reference is a different type.
 #[trace("TC-932", "FR-135-AC-3")]
 #[test]
 fn equality_follows_the_kernel_decision_for_clock_references() {
@@ -301,10 +301,10 @@ fn equality_follows_the_kernel_decision_for_clock_references() {
         evaluate(&clock(one.clone(), "c/d"), &clock(two.clone(), "c/e")),
         Outcome::Completed(false)
     );
-    assert!(matches!(
+    assert_eq!(
         evaluate(&clock(one, "c/d"), &clock(two, "c/d")),
-        Outcome::Refused(Refusal::ForeignReference { .. })
-    ));
+        Outcome::Completed(true)
+    );
     let mismatch = equality(
         &environment,
         &clock_type(),
@@ -359,8 +359,8 @@ fn clock_references_add_no_object_closure_edge() {
     ));
     assert_eq!(admitted, holder_closure(&bare, clock(one.clone(), "c/d")));
     assert_ne!(admitted, holder_closure(&bare, other_place.clone()));
-    // The same place id text in another universe is another reference.
-    assert_ne!(
+    // Identity uses place-id text; universe remains readable payload.
+    assert_eq!(
         admitted,
         holder_closure(&bare, clock(common::universe(2), "c/d"))
     );
@@ -368,9 +368,25 @@ fn clock_references_add_no_object_closure_edge() {
     let optional = holder_types(ValueType::option(clock_type()));
     let present = |value: &Value| OptionValue::from_admitted(clock_type(), Some(value.clone()));
     let admitted = holder_closure(&optional, present(&reference));
+    let held = admitted
+        .object(&object_reference("holder"))
+        .and_then(|attributes| attributes.get("r"));
+    assert!(matches!(
+        held,
+        Some(FieldValue::Present(Value::Option(option)))
+            if matches!(
+                option.payload(),
+                Some(Value::ClockReference(actual))
+                    if actual.text() == place_text("c/d") && actual.universe() == &one
+            )
+    ));
     assert_eq!(admitted.iter().count(), 1);
     assert_eq!(admitted, holder_closure(&optional, present(&reference)));
     assert_ne!(admitted, holder_closure(&optional, present(&other_place)));
+    assert_eq!(
+        admitted,
+        holder_closure(&optional, present(&clock(common::universe(2), "c/d")))
+    );
 
     let mapped = holder_types(map_of_clock());
     let map = |value: &Value| {
@@ -381,7 +397,23 @@ fn clock_references_add_no_object_closure_edge() {
         .expect("map entries admit")
     };
     let admitted = holder_closure(&mapped, map(&reference));
+    let held = admitted
+        .object(&object_reference("holder"))
+        .and_then(|attributes| attributes.get("r"));
+    assert!(matches!(
+        held,
+        Some(FieldValue::Present(Value::Map(map_value)))
+            if matches!(
+                map_value.entries(),
+                [(_, Value::ClockReference(actual))]
+                    if actual.text() == place_text("c/d") && actual.universe() == &one
+            )
+    ));
     assert_eq!(admitted.iter().count(), 1);
     assert_eq!(admitted, holder_closure(&mapped, map(&reference)));
     assert_ne!(admitted, holder_closure(&mapped, map(&other_place)));
+    assert_eq!(
+        admitted,
+        holder_closure(&mapped, map(&clock(common::universe(2), "c/d")))
+    );
 }
