@@ -168,7 +168,7 @@ const SCOPED_ARENA_ID: usize = usize::MAX;
 
 fn next_arena_id(counter: &AtomicUsize) -> Result<usize, PathArenaCapacity> {
     counter
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
+        .try_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
             next.checked_add(1)
         })
         .map_err(|_| PathArenaCapacity {
