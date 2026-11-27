@@ -17,7 +17,7 @@ path = "src/lib.rs"
 filament-exact = { git = "https://github.com/agent-ix/filament-exact", rev = "743c42e4e458782bf7a8befc3b76cc8a190ed727" }
 # The one RFC 8785 encoder, without `std`, for bounded measurement of
 # structural compound-unit terms.
-quire-canonical = { version = "0.3", git = "https://github.com/agent-ix/quire-canonical", tag = "v0.3.2", default-features = false }
+quire-canonical = { version = "0.3", git = "https://github.com/agent-ix/quire-canonical", tag = "quire-canonical-v0.3.3", default-features = false }
 thiserror = { version = "2.0.20", default-features = false }
 
 [features]
